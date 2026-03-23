@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buyza - Mi Credito</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .credito-hero { padding: 100px 2rem 2rem; background: linear-gradient(135deg, #f7f8fc 0%, #ede9ff 100%); min-height: 100vh; }
+    .credito-container { max-width: 960px; margin: 0 auto; }
+    .credito-header { margin-bottom: 2rem; animation: fadeUp 0.5s ease forwards; }
+    .credito-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.4rem; }
+    .credito-header h1 span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .credito-header p { color: var(--gray-600); font-size: 0.95rem; }
+    .cupo-card { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius: var(--radius); padding: 2rem; color: white; margin-bottom: 1.5rem; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; animation: fadeUp 0.5s ease forwards; }
+    .cupo-card::before { content: ''; position: absolute; width: 300px; height: 300px; background: rgba(255,255,255,0.05); border-radius: 50%; top: -100px; right: -80px; }
+    .cupo-card::after { content: ''; position: absolute; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%; bottom: -60px; left: -40px; }
+    .cupo-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; position: relative; z-index: 1; }
+    .cupo-label { font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.3rem; }
+    .cupo-amount { font-size: 2.8rem; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+    .cupo-badge { background: rgba(255,255,255,0.2); padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600; backdrop-filter: blur(4px); }
+    .cupo-progress-wrap { position: relative; z-index: 1; }
+    .cupo-progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; opacity: 0.8; margin-bottom: 0.5rem; }
+    .cupo-progress-bar { height: 8px; background: rgba(255,255,255,0.2); border-radius: 50px; overflow: hidden; }
+    .cupo-progress-fill { height: 100%; background: white; border-radius: 50px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+    .cupo-stats { display: flex; gap: 2rem; margin-top: 1.2rem; position: relative; z-index: 1; }
+    .cupo-stat-item { font-size: 0.85rem; opacity: 0.9; }
+    .cupo-stat-item strong { display: block; font-size: 1.1rem; font-weight: 700; opacity: 1; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+    .section-card { background: white; border-radius: var(--radius); padding: 1.75rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); animation: fadeUp 0.6s ease forwards; opacity: 0; }
+    .section-card:nth-child(1) { animation-delay: 0.1s; }
+    .section-card:nth-child(2) { animation-delay: 0.2s; }
+    .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+    .section-title svg { width: 20px; height: 20px; color: var(--primary); }
+    .cuota-item { border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; transition: var(--transition); }
+    .cuota-item:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+    .cuota-item:last-child { margin-bottom: 0; }
+    .cuota-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+    .cuota-monto { font-size: 1.05rem; font-weight: 700; }
+    .cuota-progress { height: 5px; background: var(--gray-200); border-radius: 50px; overflow: hidden; margin-bottom: 0.5rem; }
+    .cuota-progress-fill { height: 100%; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50px; }
+    .cuota-info { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gray-600); }
+    .cuota-actions { margin-top: 0.75rem; }
+    .historial-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--gray-100); }
+    .historial-item:last-child { border-bottom: none; }
+    .historial-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .historial-icon.compra { background: #fee2e2; }
+    .historial-icon.pago { background: #dcfce7; }
+    .historial-icon.aumento { background: var(--primary-light); }
+    .historial-desc { flex: 1; }
+    .historial-desc strong { display: block; font-size: 0.88rem; font-weight: 600; }
+    .historial-desc span { font-size: 0.78rem; color: var(--gray-600); }
+    .historial-monto { font-weight: 700; font-size: 0.9rem; }
+    .historial-monto.negativo { color: var(--danger); }
+    .historial-monto.positivo { color: var(--success); }
+    .empty-state { text-align: center; padding: 2rem; color: var(--gray-400); font-size: 0.9rem; }
+    .empty-state svg { width: 40px; height: 40px; margin-bottom: 0.75rem; opacity: 0.4; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(4px); }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: var(--radius); padding: 2rem; width: 100%; max-width: 420px; animation: fadeUp 0.3s ease forwards; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h3 { font-size: 1.2rem; font-weight: 700; }
+    .modal-close { background: var(--gray-100); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+    .modal-close:hover { background: var(--gray-200); }
+    .resumen-cuotas { background: var(--gray-100); border-radius: var(--radius-sm); padding: 1rem; margin: 1rem 0; }
+    .resumen-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 0.4rem; }
+    .resumen-row:last-child { margin-bottom: 0; font-weight: 700; }
+    .resumen-row span:last-child { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="../index.html">Buyza</a>
+  <div class="navbar-links">
+    <a href="../index.html" class="nav-link">Inicio</a>
+    <a href="perfil.html" class="nav-link">Mi perfil</a>
+    <a href="#" class="nav-link active">Mi credito</a>
+    <a href="#" class="btn-nav" id="btnCerrarSesion">Cerrar sesion</a>
+  </div>
+</nav>
+
+<div class="credito-hero">
+  <div class="credito-container">
+    <div class="credito-header">
+      <h1>Mi <span>Credito</span></h1>
+      <p>Administra tu cupo, revisa tus cuotas y tu historial de movimientos</p>
+    </div>
+
+    <div id="alertGlobal" class="alert"></div>
+
+    <div class="cupo-card">
+      <div class="cupo-top">
+        <div>
+          <div class="cupo-label">Cupo disponible</div>
+          <div class="cupo-amount" id="cupoDisponible">$0</div>
+        </div>
+        <div class="cupo-badge" id="estadoCupo">Cargando...</div>
+      </div>
+      <div class="cupo-progress-wrap">
+        <div class="cupo-progress-labels">
+          <span>Usado: <strong id="cupoUsadoLabel">$0</strong></span>
+          <span>Total: <strong id="cupoTotalLabel">$0</strong></span>
+        </div>
+        <div class="cupo-progress-bar">
+          <div class="cupo-progress-fill" id="cupoProgressFill" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="cupo-stats">
+        <div class="cupo-stat-item"><strong id="comprasCompletadas">0</strong>Compras completadas</div>
+        <div class="cupo-stat-item"><strong id="comprasParaAumento">0</strong>Para siguiente aumento</div>
+      </div>
+    </div>
+
+    <div class="stats-grid" style="margin-bottom:1.5rem">
+      <div class="stat-card"><div class="stat-label">Cupo total</div><div class="stat-value purple" id="statCupoTotal">$0</div></div>
+      <div class="stat-card"><div class="stat-label">Cupo usado</div><div class="stat-value red" id="statCupoUsado">$0</div></div>
+      <div class="stat-card"><div class="stat-label">Cuotas pendientes</div><div class="stat-value yellow" id="statCuotasPendientes">0</div></div>
+      <div class="stat-card"><div class="stat-label">Compras completadas</div><div class="stat-value green" id="statCompras">0</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="section-card">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Cuotas pendientes
+        </div>
+        <div id="listaCuotas">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <p>No tienes cuotas pendientes</p>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" style="margin-top:1rem" onclick="abrirModalCredito()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Usar credito
+        </button>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Historial de movimientos
+        </div>
+        <div id="listaHistorial">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <p>Sin movimientos aun</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCredito">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Usar credito</h3>
+      <button class="modal-close" onclick="cerrarModalCredito()">✕</button>
+    </div>
+    <div id="alertModal" class="alert"></div>
+    <div class="form-group">
+      <label class="form-label">Monto a financiar</label>
+      <input type="number" class="form-control" id="montoCredito" placeholder="Ej: 50000" min="1000" oninput="calcularCuotas()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Numero de cuotas (max. 12)</label>
+      <select class="form-control" id="numCuotas" onchange="calcularCuotas()">
+        <option value="1">1 cuota</option>
+        <option value="2">2 cuotas</option>
+        <option value="3">3 cuotas</option>
+        <option value="6">6 cuotas</option>
+        <option value="12">12 cuotas</option>
+      </select>
+    </div>
+    <div class="resumen-cuotas" id="resumenCuotas" style="display:none">
+      <div class="resumen-row"><span>Monto total</span><span id="resumenTotal">-</span></div>
+      <div class="resumen-row"><span>Cuotas</span><span id="resumenCuotas2">-</span></div>
+      <div class="resumen-row"><span>Valor por cuota</span><span id="resumenValorCuota">-</span></div>
+      <div class="resumen-row"><span>Cupo restante tras compra</span><span id="resumenCupoRestante">-</span></div>
+    </div>
+    <button class="btn btn-primary btn-full" id="btnConfirmarCredito" onclick="confirmarCredito()">Confirmar</button>
+  </div>
+</div>
+
+<footer>
+  <p>2026 <span>Buyza</span>. Todos los derechos reservados.</p>
+</footer>
+
+<script src="../js/api.js"></script>
+<script>
+  if (!localStorage.getItem('token')) window.location.href = 'login.html';
+
+  async function cargarCredito() {
+    try {
+      const data = await credito.get('');
+      if (data.error) throw new Error(data.error);
+      const pct = data.cupo_total > 0 ? ((data.cupo_total - data.cupo_disponible) / data.cupo_total * 100) : 0;
+      document.getElementById('cupoDisponible').textContent = formatPeso(data.cupo_disponible);
+      document.getElementById('cupoUsadoLabel').textContent = formatPeso(data.cupo_total - data.cupo_disponible);
+      document.getElementById('cupoTotalLabel').textContent = formatPeso(data.cupo_total);
+      document.getElementById('estadoCupo').textContent = pct < 50 ? 'Cupo disponible' : pct < 90 ? 'Cupo parcial' : 'Cupo casi lleno';
+      document.getElementById('comprasCompletadas').textContent = data.compras_completadas;
+      document.getElementById('comprasParaAumento').textContent = data.compras_para_siguiente_aumento;
+      document.getElementById('statCupoTotal').textContent = formatPeso(data.cupo_total);
+      document.getElementById('statCupoUsado').textContent = formatPeso(data.cupo_total - data.cupo_disponible);
+      document.getElementById('statCompras').textContent = data.compras_completadas;
+      setTimeout(() => { document.getElementById('cupoProgressFill').style.width = pct + '%'; }, 300);
+    } catch (err) { mostrarAlerta('alertGlobal', err.message, 'error'); }
+  }
+
+  async function cargarCuotas() {
+    try {
+      const cuotas = await credito.get('/cuotas');
+      document.getElementById('statCuotasPendientes').textContent = cuotas.length;
+      if (!cuotas.length) return;
+      document.getElementById('listaCuotas').innerHTML = cuotas.map(c => {
+        const pct = (c.cuotas_pagadas / c.cuotas_totales * 100).toFixed(0);
+        return `<div class="cuota-item">
+          <div class="cuota-top">
+            <span class="cuota-monto">${formatPeso(c.monto_total)}</span>
+            <span class="badge badge-pending">${c.cuotas_pagadas}/${c.cuotas_totales} cuotas</span>
+          </div>
+          <div class="cuota-progress"><div class="cuota-progress-fill" style="width:${pct}%"></div></div>
+          <div class="cuota-info">
+            <span>Cuota: ${formatPeso(c.monto_por_cuota)}</span>
+            <span>Faltan: ${c.cuotas_restantes}</span>
+          </div>
+          <div class="cuota-actions">
+            <button class="btn btn-success" style="padding:0.5rem 1rem;font-size:0.82rem" onclick="pagarCuota(${c.id})">
+              Pagar cuota ${formatPeso(c.monto_por_cuota)}
+            </button>
+          </div>
+        </div>`;
+      }).join('');
+    } catch {}
+  }
+
+  async function cargarHistorial() {
+    try {
+      const movs = await credito.get('/historial');
+      if (!movs.length) return;
+      const iconos = { compra: '🛒', pago: '✅', aumento_cupo: '🎉' };
+      document.getElementById('listaHistorial').innerHTML = movs.slice(0, 8).map(m => `
+        <div class="historial-item">
+          <div class="historial-icon ${m.tipo === 'aumento_cupo' ? 'aumento' : m.tipo}">${iconos[m.tipo]}</div>
+          <div class="historial-desc">
+            <strong>${m.descripcion || m.tipo}</strong>
+            <span>${new Date(m.fecha).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })}</span>
+          </div>
+          <div class="historial-monto ${m.tipo === 'compra' ? 'negativo' : 'positivo'}">
+            ${m.tipo === 'compra' ? '-' : '+'}${formatPeso(m.monto)}
+          </div>
+        </div>`).join('');
+    } catch {}
+  }
+
+  async function pagarCuota(id) {
+    try {
+      const data = await credito.post(`/pagar/${id}`, {});
+      if (data.error) throw new Error(data.error);
+      let msg = data.mensaje;
+      if (data.aumento_cupo) msg += ` 🎉 ${data.aumento_cupo}`;
+      mostrarAlerta('alertGlobal', msg, 'success');
+      cargarCredito(); cargarCuotas(); cargarHistorial();
+    } catch (err) { mostrarAlerta('alertGlobal', err.message, 'error'); }
+  }
+
+  let cupoActual = 0;
+
+  async function abrirModalCredito() {
+    const data = await credito.get('');
+    cupoActual = parseFloat(data.cupo_disponible);
+    document.getElementById('montoCredito').value = '';
+    document.getElementById('resumenCuotas').style.display = 'none';
+    document.getElementById('modalCredito').classList.add('show');
+  }
+
+  function cerrarModalCredito() { document.getElementById('modalCredito').classList.remove('show'); }
+
+  function calcularCuotas() {
+    const monto = parseFloat(document.getElementById('montoCredito').value);
+    const cuotas = parseInt(document.getElementById('numCuotas').value);
+    const resumen = document.getElementById('resumenCuotas');
+    if (!monto || monto <= 0) { resumen.style.display = 'none'; return; }
+    document.getElementById('resumenTotal').textContent = formatPeso(monto);
+    document.getElementById('resumenCuotas2').textContent = cuotas;
+    document.getElementById('resumenValorCuota').textContent = formatPeso((monto / cuotas).toFixed(0));
+    const restante = cupoActual - monto;
+    document.getElementById('resumenCupoRestante').textContent = restante >= 0 ? formatPeso(restante) : '⚠️ Cupo insuficiente';
+    resumen.style.display = 'block';
+  }
+
+  async function confirmarCredito() {
+    const monto = parseFloat(document.getElementById('montoCredito').value);
+    const cuotas = parseInt(document.getElementById('numCuotas').value);
+    if (!monto || monto <= 0) { mostrarAlerta('alertModal', 'Ingresa un monto valido', 'error'); return; }
+    if (monto > cupoActual) { mostrarAlerta('alertModal', 'Monto supera tu cupo disponible', 'error'); return; }
+    const btn = document.getElementById('btnConfirmarCredito');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Procesando...';
+    try {
+      const payload = JSON.parse(atob(localStorage.getItem('token').split('.')[1]));
+      const data = await credito.post('/usar', { usuario_id: payload.id, monto, cuotas });
+      if (data.error) throw new Error(data.error);
+      cerrarModalCredito();
+      mostrarAlerta('alertGlobal', `Credito aprobado: ${formatPeso(monto)} en ${cuotas} cuota(s) de ${formatPeso(data.monto_por_cuota)}`, 'success');
+      cargarCredito(); cargarCuotas(); cargarHistorial();
+    } catch (err) { mostrarAlerta('alertModal', err.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Confirmar'; }
+  }
+
+  document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
+  setTimeout(() => {
+  cargarCredito();
+  cargarCuotas();
+  cargarHistorial();
+}, 100);
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesion - Buyza</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="navbar-brand" href="../index.html">Buyza</a>
+  <div class="navbar-links">
+    <a href="../index.html" class="nav-link">Inicio</a>
+    <a href="registro.html" class="btn-nav">Registrarse</a>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="card">
+    <div class="card-header">
+      <h2>Bienvenido de nuevo</h2>
+      <p>Ingresa tus datos para continuar en Buyza</p>
+    </div>
+
+    <div id="alerta" class="alert"></div>
+
+    <form id="formLogin">
+      <div class="form-group">
+        <label class="form-label">Correo electronico</label>
+        <input type="email" id="email" class="form-control" placeholder="tu@correo.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contrasena</label>
+        <input type="password" id="password" class="form-control" placeholder="Tu contrasena" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="btnLogin">
+        Iniciar sesion
+      </button>
+    </form>
+
+    <div class="divider">o</div>
+
+    <p style="text-align:center; font-size:0.9rem; color:var(--gray-600)">
+      No tienes cuenta?
+      <a href="registro.html" style="color:var(--primary); font-weight:600; text-decoration:none">Registrate aqui</a>
+    </p>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  // Si ya hay sesion activa redirigir
+  const usuario = getUsuario();
+  if (usuario) {
+    window.location.href = usuario.rol === 'admin' ? 'admin.html' : 'perfil.html';
+  }
+
+  document.getElementById('formLogin').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnLogin');
+    btn.innerHTML = '<span class="spinner"></span> Ingresando...';
+    btn.disabled = true;
+
+    const data = {
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value
+    };
+
+    try {
+      const res = await api.post('/login', data);
+      if (res.token) {
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('usuario', JSON.stringify(res.usuario));
+        mostrarAlerta('alerta', 'Inicio de sesion exitoso. Redirigiendo...', 'success');
+        setTimeout(() => {
+          window.location.href = res.usuario.rol === 'admin' ? 'admin.html' : 'perfil.html';
+        }, 1200);
+      } else {
+        mostrarAlerta('alerta', res.error || 'Error al iniciar sesion', 'error');
+        btn.innerHTML = 'Iniciar sesion';
+        btn.disabled = false;
+      }
+    } catch {
+      mostrarAlerta('alerta', 'No se pudo conectar con el servidor', 'error');
+      btn.innerHTML = 'Iniciar sesion';
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
