@@ -129,6 +129,7 @@
   </div>
 </div>
 
+<script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script>
   const rolBadge = {
@@ -145,7 +146,7 @@
   async function cargarPerfil() {
     if (!localStorage.getItem('token')) { window.location.href = 'login.html'; return; }
     try {
-      const user = await api.get('/perfil');
+      const user = await usuarios.get('/perfil');
       if (user.error) { mostrarAlerta('alerta', user.error, 'error'); return; }
 
       document.getElementById('avatar').textContent = user.nombre.charAt(0).toUpperCase();

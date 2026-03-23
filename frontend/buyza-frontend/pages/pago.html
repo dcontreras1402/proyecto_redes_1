@@ -34,6 +34,9 @@
   </div>
 </div>
 
+<!-- ✅ CARGAR CONFIG PRIMERO -->
+<script src="../js/config.js"></script>
+<!-- ✅ DESPUÉS CARGAR API.JS -->
 <script src="../js/api.js"></script>
 <script>
   const urlParams = new URLSearchParams(window.location.search);
@@ -44,12 +47,13 @@
   if (!user || !orderId) window.location.href = 'catalogo.html';
 
   async function cargarEstadoCuenta() {
-    const data = await api.get(3004, `/api/pagos/estado-cuenta/${orderId}`);
+    // ✅ AHORA CORRECTO - Usando pagos.get()
+    const data = await pagos.get(`/estado-cuenta/${orderId}`);
     if (data && !data.error) {
       montoPendiente = data.saldo_restante;
       document.getElementById('orderIdDisplay').textContent = `Orden #${orderId}`;
-      document.getElementById('totalDisplay').textContent = `$${montoPendiente.toFixed(2)}`;
-      document.getElementById('infoDeuda').textContent = data.estado_pago === 'liquidada' ? 'Esta orden ya está pagada' : `Total de la orden: $${data.monto_total_orden}`;
+      document.getElementById('totalDisplay').textContent = formatPeso(montoPendiente);
+      document.getElementById('infoDeuda').textContent = data.estado_pago === 'liquidada' ? 'Esta orden ya está pagada' : `Total de la orden: ${formatPeso(data.monto_total_orden)}`;
       
       if(data.estado_pago === 'liquidada') {
         document.getElementById('btnPago').style.display = 'none';
@@ -66,7 +70,8 @@
     btn.disabled = true;
     btn.textContent = 'Procesando...';
     
-    const res = await api.post(3004, '/api/pagos/procesar', { 
+    // ✅ AHORA CORRECTO - Usando pagos.post()
+    const res = await pagos.post('/procesar', { 
       id_orden: orderId, 
       metodo_pago: metodo, 
       monto: montoPendiente 
@@ -78,7 +83,7 @@
         <h2>${res.mensaje}</h2>
         <p style="color:var(--gray-500)">ID Transacción: ${res.transaccion}</p>
         <div style="margin:2rem 0; padding:1rem; background:var(--gray-100); border-radius:12px">
-          <p style="font-size:0.9rem">Saldo restante: <strong>$${res.saldo_restante.toFixed(2)}</strong></p>
+          <p style="font-size:0.9rem">Saldo restante: <strong>${formatPeso(res.saldo_restante)}</strong></p>
         </div>
         <a href="catalogo.html" class="btn btn-primary">Volver al catálogo</a>
       `;

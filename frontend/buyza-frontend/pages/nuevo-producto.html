@@ -57,6 +57,7 @@
   </div>
 </div>
 
+<script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script>
   const user = getUsuario();
@@ -77,9 +78,9 @@
       imagen_url: document.getElementById('imagen_url').value || 'https://via.placeholder.com/150'
     };
 
-    const res = await api.post(3002, '/', data);
+    const res = await catalogo.post('/', data);
 
-    if (res.mensaje) {
+    if (res.mensaje || res.id) {
       mostrarAlerta('alerta', '¡Producto publicado con éxito!', 'success');
       setTimeout(() => window.location.href = 'perfil.html', 1500);
     } else {

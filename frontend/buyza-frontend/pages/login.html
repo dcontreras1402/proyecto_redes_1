@@ -49,9 +49,9 @@
   </div>
 </div>
 
+<script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script>
-  // Si ya hay sesion activa redirigir
   const usuario = getUsuario();
   if (usuario) {
     window.location.href = usuario.rol === 'admin' ? 'admin.html' : 'perfil.html';
@@ -69,7 +69,7 @@
     };
 
     try {
-      const res = await api.post('/login', data);
+      const res = await usuarios.post('/login', data);
       if (res.token) {
         localStorage.setItem('token', res.token);
         localStorage.setItem('usuario', JSON.stringify(res.usuario));

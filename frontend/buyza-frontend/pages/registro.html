@@ -73,9 +73,9 @@
   </div>
 </div>
 
+<script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script>
-  // Mostrar nota si elige vendedor
   document.querySelectorAll('input[name="rol"]').forEach(radio => {
     radio.addEventListener('change', () => {
       document.getElementById('notaVendedor').style.display =
@@ -97,7 +97,7 @@
     };
 
     try {
-      const res = await api.post('/registro', data);
+      const res = await usuarios.post('/registro', data);
       if (res.id) {
         const msg = data.rol === 'vendedor'
           ? 'Cuenta creada. Espera la aprobacion de un administrador para poder vender.'

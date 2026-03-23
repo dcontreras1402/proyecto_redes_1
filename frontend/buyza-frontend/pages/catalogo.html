@@ -27,6 +27,7 @@
   </div>
 </div>
 
+<script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script>
   const user = getUsuario();
@@ -37,7 +38,7 @@
   }
 
   async function cargarProductos() {
-    const productos = await api.get(3002, '/');
+    const productos = await catalogo.get('/');
     const grid = document.getElementById('grid-productos');
     
     if (!Array.isArray(productos) || productos.length === 0) {
@@ -51,7 +52,7 @@
         <h3 style="margin-bottom:0.5rem">${p.nombre}</h3>
         <p style="font-size:0.85rem; color:var(--gray-600); margin-bottom:1.5rem">${p.descripcion}</p>
         <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--gray-100); padding-top:1rem">
-          <span style="font-weight:800; color:var(--primary); font-size:1.2rem">$${p.precio}</span>
+          <span style="font-weight:800; color:var(--primary); font-size:1.2rem">${formatPeso(p.precio)}</span>
           <button onclick="comprar(${p.id})" class="btn btn-outline" style="padding:0.4rem 1rem; font-size:0.8rem">Comprar</button>
         </div>
         <div style="font-size:0.7rem; color:var(--gray-400); margin-top:0.5rem">Vendido por: ${p.vendedor || 'Usuario'}</div>
@@ -65,7 +66,7 @@
       return;
     }
     
-    const res = await api.post(3003, '/ordenes', { id_producto });
+    const res = await ordenes.post('/crear', { id_producto });
     if(res.id_orden) {
       mostrarAlerta('alerta', 'Orden creada correctamente', 'success');
       setTimeout(() => {

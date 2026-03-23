@@ -1,8 +1,8 @@
-const API_URL = 'http://192.168.100.2:3001/api/usuarios';
-const CREDITO_URL = 'http://192.168.100.2:3001/api/credito';
+// API HELPER - Funciones para llamadas HTTP
+// Nota: Requiere que config.js esté cargado primero
 
 const api = {
-  async post(endpoint, data, base = API_URL) {
+  async post(endpoint, data, base = CONFIG.USUARIOS_URL) {
     const res = await fetch(`${base}${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -11,7 +11,7 @@ const api = {
     return res.json();
   },
 
-  async get(endpoint, base = API_URL) {
+  async get(endpoint, base = CONFIG.USUARIOS_URL) {
     const token = localStorage.getItem('token');
     const res = await fetch(`${base}${endpoint}`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -19,17 +19,20 @@ const api = {
     return res.json();
   },
 
-  async put(endpoint, data, base = API_URL) {
+  async put(endpoint, data, base = CONFIG.USUARIOS_URL) {
     const token = localStorage.getItem('token');
     const res = await fetch(`${base}${endpoint}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${token}` 
+      },
       body: JSON.stringify(data)
     });
     return res.json();
   },
 
-  async delete(endpoint, base = API_URL) {
+  async delete(endpoint, base = CONFIG.USUARIOS_URL) {
     const token = localStorage.getItem('token');
     const res = await fetch(`${base}${endpoint}`, {
       method: 'DELETE',
@@ -39,10 +42,42 @@ const api = {
   }
 };
 
-const credito = {
-  get: (ep) => api.get(ep, CREDITO_URL),
-  post: (ep, data) => api.post(ep, data, CREDITO_URL)
+// ============================================
+// SERVICIOS POR MICROSERVICIO
+// ============================================
+
+const usuarios = {
+  post: (ep, data) => api.post(ep, data, CONFIG.USUARIOS_URL),
+  get: (ep = '') => api.get(ep, CONFIG.USUARIOS_URL),
+  put: (ep, data) => api.put(ep, data, CONFIG.USUARIOS_URL),
 };
+
+const catalogo = {
+  get: (ep = '') => api.get(ep, CONFIG.CATALOGO_URL),
+  post: (ep, data) => api.post(ep, data, CONFIG.CATALOGO_URL),
+  put: (ep, data) => api.put(ep, data, CONFIG.CATALOGO_URL),
+  delete: (ep) => api.delete(ep, CONFIG.CATALOGO_URL),
+};
+
+const ordenes = {
+  get: (ep = '') => api.get(ep, CONFIG.ORDENES_URL),
+  post: (ep, data) => api.post(ep, data, CONFIG.ORDENES_URL),
+  put: (ep, data) => api.put(ep, data, CONFIG.ORDENES_URL),
+};
+
+const pagos = {
+  get: (ep = '') => api.get(ep, CONFIG.PAGOS_URL),
+  post: (ep, data) => api.post(ep, data, CONFIG.PAGOS_URL),
+};
+
+const credito = {
+  get: (ep = '') => api.get(ep, CONFIG.CREDITO_URL),
+  post: (ep, data) => api.post(ep, data, CONFIG.CREDITO_URL)
+};
+
+// ============================================
+// UTILIDADES GENERALES
+// ============================================
 
 function getUsuario() {
   const data = localStorage.getItem('usuario');
@@ -64,5 +99,8 @@ function mostrarAlerta(id, mensaje, tipo) {
 }
 
 function formatPeso(n) {
-  return '$' + parseFloat(n).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return '$' + parseFloat(n).toLocaleString('es-CO', { 
+    minimumFractionDigits: 0, 
+    maximumFractionDigits: 0 
+  });
 }
