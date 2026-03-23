@@ -4,17 +4,21 @@ async function crearOrden(id_comprador, total, productos) {
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
+
         const [orden] = await conn.query(
-            'INSERT INTO ordenes (id_comprador, total, estado, fecha) VALUES (?, ?, "pendiente", NOW())',
-            [id_comprador, total]
+            'INSERT INTO ordenes (id_comprador, total, estado) VALUES (?, ?, ?)',
+            [id_comprador, total, 'pagada']
         );
+
         const id_orden = orden.insertId;
+
         for (const prod of productos) {
             await conn.query(
                 'INSERT INTO orden_detalles (id_orden, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
                 [id_orden, prod.id_producto, prod.cantidad, prod.precio]
             );
         }
+
         await conn.commit();
         return id_orden;
     } catch (error) {

@@ -7,7 +7,7 @@ const { verificarToken } = require('../middlewares/authMiddleware');
 router.post('/api/ordenes', verificarToken, async (req, res) => {
     try {
         const id_comprador = req.usuario.id;
-        const { productos } = req.body;
+        const { productos, cuotas } = req.body;
         let totalCalculado = 0;
         const productosValidados = [];
 
@@ -15,13 +15,14 @@ router.post('/api/ordenes', verificarToken, async (req, res) => {
             return res.status(400).json({ error: 'La orden debe tener productos' });
         }
 
+        // 1. Validar Stock en Microservicio Productos (3002)
         for (const item of productos) {
             try {
                 const resp = await axios.get(`http://localhost:3002/api/productos/${item.id_producto}`);
                 const prodInfo = resp.data;
 
                 if (prodInfo.cantidad < item.cantidad) {
-                    return res.status(400).json({ error: `Stock insuficiente para producto ID: ${item.id_producto}` });
+                    return res.status(400).json({ error: `Stock insuficiente para: ${prodInfo.nombre}` });
                 }
 
                 totalCalculado += parseFloat(prodInfo.precio) * item.cantidad;
@@ -31,12 +32,26 @@ router.post('/api/ordenes', verificarToken, async (req, res) => {
                     precio: prodInfo.precio
                 });
             } catch (err) {
-                return res.status(404).json({ error: `Producto ${item.id_producto} no existe en catalogo` });
+                return res.status(404).json({ error: `Producto ${item.id_producto} no encontrado` });
             }
         }
 
+        // 2. Validar y Descontar Cupo en Microservicio Usuarios (3001)
+        try {
+            await axios.post('http://localhost:3001/api/credito/usar', {
+                usuario_id: id_comprador,
+                monto: totalCalculado,
+                cuotas: cuotas || 1
+            });
+        } catch (err) {
+            const msg = err.response?.data?.error || 'Error al procesar el crédito';
+            return res.status(err.response?.status || 400).json({ error: msg });
+        }
+
+        // 3. Crear la Orden (Ahora que el crédito está aprobado)
         const id_orden = await ordenesModel.crearOrden(id_comprador, totalCalculado, productosValidados);
 
+        // 4. Actualizar Stock
         for (const item of productosValidados) {
             await axios.put(`http://localhost:3002/api/productos/${item.id_producto}/reducir-stock`, {
                 cantidad_comprada: item.cantidad
@@ -44,12 +59,13 @@ router.post('/api/ordenes', verificarToken, async (req, res) => {
         }
 
         res.status(201).json({ 
-            mensaje: 'Orden creada y stock actualizado', 
+            mensaje: 'Compra exitosa con crédito', 
             id_orden, 
             total: totalCalculado.toFixed(2) 
         });
+
     } catch (error) {
-        res.status(500).json({ error: 'Error interno', detalle: error.message });
+        res.status(500).json({ error: 'Error interno en órdenes', detalle: error.message });
     }
 });
 
@@ -57,19 +73,7 @@ router.get('/api/ordenes/usuario/:id', verificarToken, async (req, res) => {
     try {
         const { id } = req.params;
         const ordenes = await ordenesModel.obtenerOrdenesPorUsuario(id);
-
-        const ordenesConDeuda = await Promise.all(ordenes.map(async (orden) => {
-            let deuda = orden.total;
-            try {
-                const respuestaPagos = await axios.get(`http://localhost:3004/api/pagos/suma/${orden.id}`);
-                deuda = (parseFloat(orden.total) - parseFloat(respuestaPagos.data.total_pagado)).toFixed(2);
-            } catch (error) {
-                deuda = parseFloat(orden.total).toFixed(2);
-            }
-            return { ...orden, deuda };
-        }));
-
-        res.status(200).json(ordenesConDeuda);
+        res.status(200).json(ordenes);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -80,15 +84,7 @@ router.get('/api/ordenes/info/:id', async (req, res) => {
         const { id } = req.params;
         const orden = await ordenesModel.obtenerOrdenPorId(id);
         if (!orden) return res.status(404).json({ error: 'No encontrada' });
-
-        let deuda = orden.total;
-        try {
-            const respuestaPagos = await axios.get(`http://localhost:3004/api/pagos/suma/${id}`);
-            deuda = (parseFloat(orden.total) - parseFloat(respuestaPagos.data.total_pagado)).toFixed(2);
-        } catch (error) {
-            deuda = parseFloat(orden.total).toFixed(2);
-        }
-        res.status(200).json({ ...orden, deuda });
+        res.status(200).json(orden);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -109,7 +105,7 @@ router.put('/api/ordenes/:id/estado', async (req, res) => {
         const { id } = req.params;
         const { estado } = req.body;
         await ordenesModel.actualizarEstadoOrden(id, estado);
-        res.status(200).json({ mensaje: 'Actualizado' });
+        res.status(200).json({ mensaje: 'Estado actualizado' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

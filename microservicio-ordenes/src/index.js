@@ -9,7 +9,7 @@ const app = express();
 app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
-app.use(ordenesController);
+app.use('/api', ordenesController);
 
 const PORT = process.env.PORT || 3003;
 app.listen(PORT, () => {
