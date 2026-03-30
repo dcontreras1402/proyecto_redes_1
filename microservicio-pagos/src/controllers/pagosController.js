@@ -7,6 +7,7 @@ const { verificarToken } = require('../middlewares/authMiddleware');
 router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
     try {
         const { id_orden, metodo_pago, monto } = req.body;
+        const id_usuario = req.usuario.id;  // ✅ OBTENER ID DEL USUARIO
         const montoAbono = parseFloat(monto);
 
         const respuestaOrden = await axios.get(`http://localhost:3003/api/ordenes/info/${id_orden}`);
@@ -36,11 +37,18 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
         
         if (Math.abs(totalAcumulado - totalOrden) < 0.01) {
             try {
+                // ✅ DESCONTAR CRÉDITO AL COMPLETAR EL PAGO
+                await axios.post('http://localhost:3001/api/credito/usar', {
+                    usuario_id: id_usuario,
+                    monto: totalOrden,
+                    cuotas: 1
+                });
+
                 await axios.put(`http://localhost:3003/api/ordenes/${id_orden}/estado`, { estado: 'pagada' });
                 mensajeCierre = "Pago completado. Orden liquidada";
                 estadoFinal = "pagada";
             } catch (error) {
-                console.error(error.message);
+                console.error('Error en liquidación:', error.message);
             }
         }
 
@@ -58,7 +66,7 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
     } catch (error) {
         if (error.response) {
             return res.status(error.response.status).json({ 
-                error: 'Fallo en comunicación con Órdenes', 
+                error: 'Fallo en comunicación con otros servicios', 
                 detalle: error.response.data 
             });
         }
