@@ -59,7 +59,7 @@ router.post('/api/ordenes', verificarToken, async (req, res) => {
             return res.status(400).json({ error: 'La orden debe tener productos' });
         }
 
-        // 1. Validar Stock en Microservicio Productos (3002)
+        // 1. Validar Stock en Microservicio Catálogo (3002)
         for (const item of productos) {
             try {
                 const resp = await axios.get(`http://localhost:3002/api/catalogo/${item.id_producto}`);
@@ -113,6 +113,7 @@ router.post('/api/ordenes', verificarToken, async (req, res) => {
     }
 });
 
+// ✅ OBTENER ÓRDENES DEL USUARIO
 router.get('/api/ordenes/usuario/:id', verificarToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -123,6 +124,7 @@ router.get('/api/ordenes/usuario/:id', verificarToken, async (req, res) => {
     }
 });
 
+// ✅ OBTENER INFO DE UNA ORDEN (sin autenticación)
 router.get('/api/ordenes/info/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -134,6 +136,7 @@ router.get('/api/ordenes/info/:id', async (req, res) => {
     }
 });
 
+// ✅ OBTENER DETALLE DE UNA ORDEN (con autenticación)
 router.get('/api/ordenes/:id', verificarToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -144,6 +147,7 @@ router.get('/api/ordenes/:id', verificarToken, async (req, res) => {
     }
 });
 
+// ✅ ACTUALIZAR ESTADO DE ORDEN
 router.put('/api/ordenes/:id/estado', async (req, res) => {
     try {
         const { id } = req.params;
