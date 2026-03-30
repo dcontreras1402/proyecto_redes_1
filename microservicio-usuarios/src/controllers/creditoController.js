@@ -10,16 +10,17 @@ const verCredito = async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     const user = rows[0];
-    const cupo_usado = user.cupo_total - user.cupo_disponible;
+    const cupo_usado = parseFloat(user.cupo_total) - parseFloat(user.cupo_disponible);
 
     res.json({
-      cupo_total: user.cupo_total,
-      cupo_disponible: user.cupo_disponible,
+      cupo_total: parseFloat(user.cupo_total),
+      cupo_disponible: parseFloat(user.cupo_disponible),
       cupo_usado: cupo_usado,
       compras_completadas: user.compras_completadas,
       compras_para_siguiente_aumento: 3 - (user.compras_completadas % 3)
     });
   } catch (err) {
+    console.error('Error verCredito:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -51,15 +52,16 @@ const usarCredito = async (req, res) => {
     if (user.estado !== 'activo')
       return res.status(403).json({ error: 'Usuario no activo' });
 
-    if (monto > user.cupo_disponible)
+    const cupoDisp = parseFloat(user.cupo_disponible);
+    if (monto > cupoDisp)
       return res.status(400).json({
         error: 'Cupo insuficiente',
-        cupo_disponible: user.cupo_disponible,
+        cupo_disponible: cupoDisp,
         monto_solicitado: monto
       });
 
     const monto_por_cuota = (monto / cuotas).toFixed(2);
-    const nuevo_cupo = (user.cupo_disponible - monto).toFixed(2);
+    const nuevo_cupo = (cupoDisp - monto).toFixed(2);
 
     // Descontar cupo
     await db.execute(
@@ -70,7 +72,7 @@ const usarCredito = async (req, res) => {
     // Registrar movimiento
     await db.execute(
       'INSERT INTO movimientos_credito (usuario_id, tipo, monto, cuotas, cupo_antes, cupo_despues, descripcion) VALUES (?,?,?,?,?,?,?)',
-      [usuario_id, 'compra', monto, cuotas, user.cupo_disponible, nuevo_cupo, `Compra en ${cuotas} cuota(s)`]
+      [usuario_id, 'compra', monto, cuotas, cupoDisp, nuevo_cupo, `Compra en ${cuotas} cuota(s)`]
     );
 
     // Registrar cuotas pendientes
@@ -83,11 +85,12 @@ const usarCredito = async (req, res) => {
       mensaje: 'Credito aprobado',
       monto_aprobado: monto,
       cuotas: cuotas,
-      monto_por_cuota: monto_por_cuota,
-      cupo_disponible_restante: nuevo_cupo
+      monto_por_cuota: parseFloat(monto_por_cuota),
+      cupo_disponible_restante: parseFloat(nuevo_cupo)
     });
 
   } catch (err) {
+    console.error('Error usarCredito:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -95,11 +98,16 @@ const usarCredito = async (req, res) => {
 // Registrar pago de cuota
 const pagarCuota = async (req, res) => {
   const { cuota_id } = req.params;
+  const usuario_id = req.usuario?.id;
+
+  if (!usuario_id) {
+    return res.status(401).json({ error: 'Usuario no autenticado' });
+  }
 
   try {
     const [cuotas] = await db.execute(
       'SELECT * FROM cuotas_pendientes WHERE id = ? AND usuario_id = ?',
-      [cuota_id, req.usuario.id]
+      [cuota_id, usuario_id]
     );
 
     if (!cuotas.length) return res.status(404).json({ error: 'Cuota no encontrada' });
@@ -121,46 +129,53 @@ const pagarCuota = async (req, res) => {
     // Devolver el monto de la cuota al cupo disponible
     const [userRows] = await db.execute(
       'SELECT cupo_disponible, cupo_total, compras_completadas FROM usuarios WHERE id = ?',
-      [req.usuario.id]
+      [usuario_id]
     );
+    
+    if (!userRows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    
     const user = userRows[0];
-    let nuevo_cupo = parseFloat(user.cupo_disponible) + parseFloat(cuota.monto_por_cuota);
-    let nuevo_cupo_total = user.cupo_total;
-    let nuevas_compras = user.compras_completadas;
+    const cupoDisp = parseFloat(user.cupo_disponible || 0);
+    const cupoTotal = parseFloat(user.cupo_total || 0);
+    const montoPorCuota = parseFloat(cuota.monto_por_cuota || 0);
+    
+    let nuevo_cupo = cupoDisp + montoPorCuota;
+    let nuevo_cupo_total = cupoTotal;
+    let nuevas_compras = user.compras_completadas || 0;
     let aumento_cupo = false;
 
     // Si termino de pagar la compra completa
     if (pagado_total) {
-      nuevas_compras = user.compras_completadas + 1;
+      nuevas_compras = nuevas_compras + 1;
 
       // Cada 3 compras completadas aumentar cupo en 50.000
       if (nuevas_compras % 3 === 0 && nuevo_cupo_total < 500000) {
-        nuevo_cupo_total = Math.min(parseFloat(user.cupo_total) + 50000, 500000);
+        nuevo_cupo_total = Math.min(cupoTotal + 50000, 500000);
         nuevo_cupo = Math.min(nuevo_cupo + 50000, 500000);
         aumento_cupo = true;
 
         // Registrar aumento de cupo
         await db.execute(
           'INSERT INTO movimientos_credito (usuario_id, tipo, monto, cupo_antes, cupo_despues, descripcion) VALUES (?,?,?,?,?,?)',
-          [req.usuario.id, 'aumento_cupo', 50000, user.cupo_total, nuevo_cupo_total, 'Aumento por buen historial de pagos']
+          [usuario_id, 'aumento_cupo', 50000, cupoTotal, nuevo_cupo_total, 'Aumento por buen historial de pagos']
         );
       }
 
       await db.execute(
         'UPDATE usuarios SET cupo_disponible = ?, cupo_total = ?, compras_completadas = ? WHERE id = ?',
-        [nuevo_cupo.toFixed(2), nuevo_cupo_total.toFixed(2), nuevas_compras, req.usuario.id]
+        [nuevo_cupo.toFixed(2), nuevo_cupo_total.toFixed(2), nuevas_compras, usuario_id]
       );
     } else {
       await db.execute(
         'UPDATE usuarios SET cupo_disponible = ? WHERE id = ?',
-        [nuevo_cupo.toFixed(2), req.usuario.id]
+        [nuevo_cupo.toFixed(2), usuario_id]
       );
     }
 
     // Registrar movimiento de pago
     await db.execute(
       'INSERT INTO movimientos_credito (usuario_id, tipo, monto, cupo_antes, cupo_despues, descripcion) VALUES (?,?,?,?,?,?)',
-      [req.usuario.id, 'pago', cuota.monto_por_cuota, user.cupo_disponible, nuevo_cupo.toFixed(2),
+      [usuario_id, 'pago', montoPorCuota, cupoDisp, nuevo_cupo.toFixed(2),
         `Pago cuota ${nuevas_cuotas_pagadas} de ${cuota.cuotas_totales}`]
     );
 
@@ -170,11 +185,12 @@ const pagarCuota = async (req, res) => {
       cuotas_totales: cuota.cuotas_totales,
       compra_completada: pagado_total,
       aumento_cupo: aumento_cupo ? 'Tu cupo aumento $50.000 por buen historial' : null,
-      cupo_disponible: nuevo_cupo.toFixed(2),
-      cupo_total: nuevo_cupo_total.toFixed(2)
+      cupo_disponible: parseFloat(nuevo_cupo.toFixed(2)),
+      cupo_total: parseFloat(nuevo_cupo_total.toFixed(2))
     });
 
   } catch (err) {
+    console.error('Error pagarCuota:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -188,6 +204,7 @@ const verHistorial = async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
+    console.error('Error verHistorial:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -206,6 +223,7 @@ const verCuotas = async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
+    console.error('Error verCuotas:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -224,6 +242,7 @@ const verCreditoAdmin = async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Comprador no encontrado' });
     res.json(rows[0]);
   } catch (err) {
+    console.error('Error verCreditoAdmin:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -249,6 +268,7 @@ const ajustarCupo = async (req, res) => {
 
     res.json({ mensaje: `Cupo ajustado a $${cupo_total} correctamente` });
   } catch (err) {
+    console.error('Error ajustarCupo:', err);
     res.status(500).json({ error: err.message });
   }
 };
