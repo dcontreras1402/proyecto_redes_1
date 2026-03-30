@@ -3,9 +3,13 @@
 
 const api = {
   async post(endpoint, data, base = CONFIG.USUARIOS_URL) {
+    const token = localStorage.getItem('token');
     const res = await fetch(`${base}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(data)
     });
     return res.json();
