@@ -4,6 +4,50 @@ const ordenesModel = require('../models/ordenesModel');
 const axios = require('axios');
 const { verificarToken } = require('../middlewares/authMiddleware');
 
+// ✅ RUTA PARA CREAR ORDEN SIMPLE (desde catálogo - un producto)
+router.post('/api/ordenes/crear', verificarToken, async (req, res) => {
+    try {
+        const id_comprador = req.usuario.id;
+        const { id_producto } = req.body;
+
+        if (!id_producto) {
+            return res.status(400).json({ error: 'ID de producto requerido' });
+        }
+
+        // 1. Obtener info del producto
+        try {
+            const resp = await axios.get(`http://localhost:3002/api/catalogo/${id_producto}`);
+            const prodInfo = resp.data;
+
+            if (prodInfo.cantidad < 1) {
+                return res.status(400).json({ error: `Stock insuficiente para: ${prodInfo.nombre}` });
+            }
+
+            const totalCalculado = parseFloat(prodInfo.precio);
+
+            // 2. Crear orden (sin usar crédito aún, solo crear orden pendiente de pago)
+            const id_orden = await ordenesModel.crearOrden(id_comprador, totalCalculado, [{
+                id_producto: id_producto,
+                cantidad: 1,
+                precio: prodInfo.precio
+            }]);
+
+            res.status(201).json({ 
+                id_orden,
+                total: totalCalculado.toFixed(2),
+                producto: prodInfo.nombre
+            });
+
+        } catch (err) {
+            return res.status(404).json({ error: `Producto ${id_producto} no encontrado` });
+        }
+
+    } catch (error) {
+        res.status(500).json({ error: 'Error interno en órdenes', detalle: error.message });
+    }
+});
+
+// ✅ RUTA ORIGINAL - CREAR ORDEN CON MÚLTIPLES PRODUCTOS Y CRÉDITO
 router.post('/api/ordenes', verificarToken, async (req, res) => {
     try {
         const id_comprador = req.usuario.id;
@@ -18,7 +62,7 @@ router.post('/api/ordenes', verificarToken, async (req, res) => {
         // 1. Validar Stock en Microservicio Productos (3002)
         for (const item of productos) {
             try {
-                const resp = await axios.get(`http://localhost:3002/api/productos/${item.id_producto}`);
+                const resp = await axios.get(`http://localhost:3002/api/catalogo/${item.id_producto}`);
                 const prodInfo = resp.data;
 
                 if (prodInfo.cantidad < item.cantidad) {
@@ -53,7 +97,7 @@ router.post('/api/ordenes', verificarToken, async (req, res) => {
 
         // 4. Actualizar Stock
         for (const item of productosValidados) {
-            await axios.put(`http://localhost:3002/api/productos/${item.id_producto}/reducir-stock`, {
+            await axios.put(`http://localhost:3002/api/catalogo/${item.id_producto}/reducir-stock`, {
                 cantidad_comprada: item.cantidad
             });
         }
