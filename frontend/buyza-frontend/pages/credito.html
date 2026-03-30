@@ -208,15 +208,18 @@
     try {
       const data = await credito.get('');
       if (data.error) throw new Error(data.error);
-      const pct = data.cupo_total > 0 ? ((data.cupo_total - data.cupo_disponible) / data.cupo_total * 100) : 0;
-      document.getElementById('cupoDisponible').textContent = formatPeso(data.cupo_disponible);
-      document.getElementById('cupoUsadoLabel').textContent = formatPeso(data.cupo_total - data.cupo_disponible);
-      document.getElementById('cupoTotalLabel').textContent = formatPeso(data.cupo_total);
+      const cupoDisp = parseFloat(data.cupo_disponible);  // ✅ CONVERTIR A NÚMERO
+      const cupoTotal = parseFloat(data.cupo_total);      // ✅ CONVERTIR A NÚMERO
+      const usado = cupoTotal - cupoDisp;
+      const pct = cupoTotal > 0 ? (usado / cupoTotal * 100) : 0;
+      document.getElementById('cupoDisponible').textContent = formatPeso(cupoDisp);
+      document.getElementById('cupoUsadoLabel').textContent = formatPeso(usado);
+      document.getElementById('cupoTotalLabel').textContent = formatPeso(cupoTotal);
       document.getElementById('estadoCupo').textContent = pct < 50 ? 'Cupo disponible' : pct < 90 ? 'Cupo parcial' : 'Cupo casi lleno';
       document.getElementById('comprasCompletadas').textContent = data.compras_completadas;
       document.getElementById('comprasParaAumento').textContent = data.compras_para_siguiente_aumento;
-      document.getElementById('statCupoTotal').textContent = formatPeso(data.cupo_total);
-      document.getElementById('statCupoUsado').textContent = formatPeso(data.cupo_total - data.cupo_disponible);
+      document.getElementById('statCupoTotal').textContent = formatPeso(cupoTotal);
+      document.getElementById('statCupoUsado').textContent = formatPeso(usado);
       document.getElementById('statCompras').textContent = data.compras_completadas;
       setTimeout(() => { document.getElementById('cupoProgressFill').style.width = pct + '%'; }, 300);
     } catch (err) { mostrarAlerta('alertGlobal', err.message, 'error'); }
@@ -229,19 +232,20 @@
       if (!cuotas.length) return;
       document.getElementById('listaCuotas').innerHTML = cuotas.map(c => {
         const pct = (c.cuotas_pagadas / c.cuotas_totales * 100).toFixed(0);
+        const montoPorCuota = parseFloat(c.monto_por_cuota);  // ✅ CONVERTIR A NÚMERO
         return `<div class="cuota-item">
           <div class="cuota-top">
-            <span class="cuota-monto">${formatPeso(c.monto_total)}</span>
+            <span class="cuota-monto">${formatPeso(parseFloat(c.monto_total))}</span>
             <span class="badge badge-pending">${c.cuotas_pagadas}/${c.cuotas_totales} cuotas</span>
           </div>
           <div class="cuota-progress"><div class="cuota-progress-fill" style="width:${pct}%"></div></div>
           <div class="cuota-info">
-            <span>Cuota: ${formatPeso(c.monto_por_cuota)}</span>
+            <span>Cuota: ${formatPeso(montoPorCuota)}</span>
             <span>Faltan: ${c.cuotas_restantes}</span>
           </div>
           <div class="cuota-actions">
             <button class="btn btn-success" style="padding:0.5rem 1rem;font-size:0.82rem" onclick="pagarCuota(${c.id})">
-              Pagar cuota ${formatPeso(c.monto_por_cuota)}
+              Pagar cuota ${formatPeso(montoPorCuota)}
             </button>
           </div>
         </div>`;
@@ -262,7 +266,7 @@
             <span>${new Date(m.fecha).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })}</span>
           </div>
           <div class="historial-monto ${m.tipo === 'compra' ? 'negativo' : 'positivo'}">
-            ${m.tipo === 'compra' ? '-' : '+'}${formatPeso(m.monto)}
+            ${m.tipo === 'compra' ? '-' : '+'}${formatPeso(parseFloat(m.monto))}
           </div>
         </div>`).join('');
     } catch (err) { mostrarAlerta('alertGlobal', 'Error cargando historial: ' + err.message, 'error'); }
@@ -283,7 +287,7 @@
 
   async function abrirModalCredito() {
     const data = await credito.get('');
-    cupoActual = parseFloat(data.cupo_disponible);
+    cupoActual = parseFloat(data.cupo_disponible);  // ✅ CONVERTIR A NÚMERO
     document.getElementById('montoCredito').value = '';
     document.getElementById('resumenCuotas').style.display = 'none';
     document.getElementById('modalCredito').classList.add('show');
@@ -298,7 +302,8 @@
     if (!monto || monto <= 0) { resumen.style.display = 'none'; return; }
     document.getElementById('resumenTotal').textContent = formatPeso(monto);
     document.getElementById('resumenCuotas2').textContent = cuotas;
-    document.getElementById('resumenValorCuota').textContent = formatPeso((monto / cuotas).toFixed(0));
+    const valorCuota = parseFloat((monto / cuotas).toFixed(0));  // ✅ CONVERTIR A NÚMERO
+    document.getElementById('resumenValorCuota').textContent = formatPeso(valorCuota);
     const restante = cupoActual - monto;
     document.getElementById('resumenCupoRestante').textContent = restante >= 0 ? formatPeso(restante) : '⚠️ Cupo insuficiente';
     resumen.style.display = 'block';
@@ -316,8 +321,9 @@
       const payload = JSON.parse(atob(localStorage.getItem('token').split('.')[1]));
       const data = await credito.post('/usar', { usuario_id: payload.id, monto, cuotas });
       if (data.error) throw new Error(data.error);
+      const montoPorCuota = parseFloat(data.monto_por_cuota);  // ✅ CONVERTIR A NÚMERO
       cerrarModalCredito();
-      mostrarAlerta('alertGlobal', `Credito aprobado: ${formatPeso(monto)} en ${cuotas} cuota(s) de ${formatPeso(data.monto_por_cuota)}`, 'success');
+      mostrarAlerta('alertGlobal', `Credito aprobado: ${formatPeso(monto)} en ${cuotas} cuota(s) de ${formatPeso(montoPorCuota)}`, 'success');
       cargarCredito(); cargarCuotas(); cargarHistorial();
     } catch (err) { mostrarAlerta('alertModal', err.message, 'error'); }
     finally { btn.disabled = false; btn.textContent = 'Confirmar'; }

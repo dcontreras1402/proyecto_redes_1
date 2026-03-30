@@ -177,12 +177,14 @@
     try {
       const data = await credito.get('');
       if (data.error) return;
-      const usado = parseFloat(data.cupo_total) - parseFloat(data.cupo_disponible);
-      const pct = data.cupo_total > 0 ? (usado / data.cupo_total * 100) : 0;
+      const cupoDisp = parseFloat(data.cupo_disponible);  // ✅ CONVERTIR A NÚMERO
+      const cupoTotal = parseFloat(data.cupo_total);      // ✅ CONVERTIR A NÚMERO
+      const usado = cupoTotal - cupoDisp;
+      const pct = cupoTotal > 0 ? (usado / cupoTotal * 100) : 0;
 
-      document.getElementById('bannerCupo').textContent = formatPeso(data.cupo_disponible);
+      document.getElementById('bannerCupo').textContent = formatPeso(cupoDisp);
       document.getElementById('bannerUsado').textContent = formatPeso(usado);
-      document.getElementById('bannerTotal').textContent = formatPeso(data.cupo_total);
+      document.getElementById('bannerTotal').textContent = formatPeso(cupoTotal);
       document.getElementById('bannerCompras').textContent = data.compras_completadas;
       document.getElementById('creditoBanner').style.display = 'block';
       setTimeout(() => { document.getElementById('bannerBar').style.width = pct + '%'; }, 300);
