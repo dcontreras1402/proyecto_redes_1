@@ -7,7 +7,7 @@ async function crearOrden(id_comprador, total, productos) {
 
         const [orden] = await conn.query(
             'INSERT INTO ordenes (id_comprador, total, estado) VALUES (?, ?, ?)',
-            [id_comprador, total, 'pagada']
+            [id_comprador, total, 'pendiente']
         );
 
         const id_orden = orden.insertId;
