@@ -73,8 +73,10 @@
 <nav class="navbar">
   <a class="navbar-brand" href="../index.html">Buyza</a>
   <div class="navbar-links">
-    <a href="../index.html" class="nav-link">Inicio</a>
-    <a href="credito.html" class="nav-link" id="linkCredito" style="display:none">Mi credito</a>
+    <a href="catalogo.html" class="nav-link">Catálogo</a>
+    <a href="perfil.html" class="nav-link active">Mi Perfil</a>
+    <a href="credito.html" class="nav-link" id="linkCredito" style="display:none">Mi Crédito</a>
+    <a href="nuevo-producto.html" class="nav-link" id="linkPublicar" style="display:none">+ Publicar</a>
     <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesion</a>
   </div>
 </nav>
@@ -129,7 +131,9 @@
   </div>
 </div>
 
+<!-- ✅ CARGAR CONFIG PRIMERO -->
 <script src="../js/config.js"></script>
+<!-- ✅ DESPUÉS CARGAR API.JS -->
 <script src="../js/api.js"></script>
 <script>
   const rolBadge = {
@@ -158,9 +162,13 @@
         .toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
       document.getElementById('contenidoPerfil').style.display = 'block';
 
+      // Mostrar opciones según el rol
       if (user.rol === 'comprador') {
         document.getElementById('linkCredito').style.display = 'inline';
         cargarCredito();
+      }
+      if (user.rol === 'vendedor') {
+        document.getElementById('linkPublicar').style.display = 'inline';
       }
     } catch { mostrarAlerta('alerta', 'Error al cargar el perfil', 'error'); }
   }

@@ -11,7 +11,9 @@
 <nav class="navbar">
   <a class="navbar-brand" href="../index.html">Buyza</a>
   <div class="navbar-links">
+    <a href="catalogo.html" class="nav-link">Catálogo</a>
     <a href="perfil.html" class="nav-link">Mi Perfil</a>
+    <a href="nuevo-producto.html" class="nav-link">+ Publicar</a>
     <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesion</a>
   </div>
 </nav>
@@ -65,6 +67,9 @@
   </div>
 </div>
 
+<!-- ✅ CARGAR CONFIG PRIMERO -->
+<script src="../js/config.js"></script>
+<!-- ✅ DESPUÉS CARGAR API.JS -->
 <script src="../js/api.js"></script>
 <script>
   const urlParams = new URLSearchParams(window.location.search);
@@ -74,7 +79,7 @@
   if (!user || user.rol !== 'vendedor' || !productId) window.location.href = 'perfil.html';
 
   async function cargarProducto() {
-    const productos = await api.get(3002, '/mis-productos');
+    const productos = await catalogo.get('/mis-productos');
     const p = productos.find(item => item.id == productId);
     
     if (p) {
@@ -103,7 +108,7 @@
       imagen_url: document.getElementById('imagen_url').value
     };
 
-    const res = await api.put(3002, `/${productId}`, data);
+    const res = await catalogo.put(`/${productId}`, data);
 
     if (res.mensaje) {
       mostrarAlerta('alerta', 'Actualizado correctamente', 'success');

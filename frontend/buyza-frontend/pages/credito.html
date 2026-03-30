@@ -189,9 +189,20 @@
   <p>2026 <span>Buyza</span>. Todos los derechos reservados.</p>
 </footer>
 
+<!-- ✅ CARGAR CONFIG PRIMERO -->
+<script src="../js/config.js"></script>
+<!-- ✅ DESPUÉS CARGAR API.JS -->
 <script src="../js/api.js"></script>
 <script>
-  if (!localStorage.getItem('token')) window.location.href = 'login.html';
+  // ✅ VERIFICAR TOKEN Y ACCESO
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+
+  const user = getUsuario();
+  if (!user || user.rol !== 'comprador') {
+    window.location.href = 'perfil.html';
+  }
 
   async function cargarCredito() {
     try {
@@ -235,13 +246,13 @@
           </div>
         </div>`;
       }).join('');
-    } catch {}
+    } catch (err) { mostrarAlerta('alertGlobal', 'Error cargando cuotas: ' + err.message, 'error'); }
   }
 
   async function cargarHistorial() {
     try {
       const movs = await credito.get('/historial');
-      if (!movs.length) return;
+      if (!movs || !movs.length) return;
       const iconos = { compra: '🛒', pago: '✅', aumento_cupo: '🎉' };
       document.getElementById('listaHistorial').innerHTML = movs.slice(0, 8).map(m => `
         <div class="historial-item">
@@ -254,7 +265,7 @@
             ${m.tipo === 'compra' ? '-' : '+'}${formatPeso(m.monto)}
           </div>
         </div>`).join('');
-    } catch {}
+    } catch (err) { mostrarAlerta('alertGlobal', 'Error cargando historial: ' + err.message, 'error'); }
   }
 
   async function pagarCuota(id) {
@@ -313,11 +324,12 @@
   }
 
   document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
+  
   setTimeout(() => {
-  cargarCredito();
-  cargarCuotas();
-  cargarHistorial();
-}, 100);
+    cargarCredito();
+    cargarCuotas();
+    cargarHistorial();
+  }, 100);
 </script>
 </body>
 </html>

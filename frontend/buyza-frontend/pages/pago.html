@@ -10,6 +10,11 @@
 
 <nav class="navbar">
   <a class="navbar-brand" href="../index.html">Buyza</a>
+  <div class="navbar-links">
+    <a href="catalogo.html" class="nav-link">Catálogo</a>
+    <a href="perfil.html" class="nav-link">Mi Perfil</a>
+    <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesion</a>
+  </div>
 </nav>
 
 <div class="card" style="max-width: 500px; margin: 120px auto; padding: 2rem; text-align: center;">
@@ -34,9 +39,7 @@
   </div>
 </div>
 
-<!-- ✅ CARGAR CONFIG PRIMERO -->
 <script src="../js/config.js"></script>
-<!-- ✅ DESPUÉS CARGAR API.JS -->
 <script src="../js/api.js"></script>
 <script>
   const urlParams = new URLSearchParams(window.location.search);
@@ -47,7 +50,6 @@
   if (!user || !orderId) window.location.href = 'catalogo.html';
 
   async function cargarEstadoCuenta() {
-    // ✅ AHORA CORRECTO - Usando pagos.get()
     const data = await pagos.get(`/estado-cuenta/${orderId}`);
     if (data && !data.error) {
       montoPendiente = data.saldo_restante;
@@ -70,7 +72,6 @@
     btn.disabled = true;
     btn.textContent = 'Procesando...';
     
-    // ✅ AHORA CORRECTO - Usando pagos.post()
     const res = await pagos.post('/procesar', { 
       id_orden: orderId, 
       metodo_pago: metodo, 

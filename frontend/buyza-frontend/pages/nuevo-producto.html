@@ -11,7 +11,9 @@
 <nav class="navbar">
   <a class="navbar-brand" href="../index.html">Buyza</a>
   <div class="navbar-links">
+    <a href="catalogo.html" class="nav-link">Catálogo</a>
     <a href="perfil.html" class="nav-link">Mi Perfil</a>
+    <a href="nuevo-producto.html" class="nav-link active">+ Publicar</a>
     <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesion</a>
   </div>
 </nav>
@@ -57,7 +59,9 @@
   </div>
 </div>
 
+<!-- ✅ CARGAR CONFIG PRIMERO -->
 <script src="../js/config.js"></script>
+<!-- ✅ DESPUÉS CARGAR API.JS -->
 <script src="../js/api.js"></script>
 <script>
   const user = getUsuario();
