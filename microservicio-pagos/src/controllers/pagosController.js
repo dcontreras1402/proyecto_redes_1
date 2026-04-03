@@ -10,7 +10,7 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
         const id_usuario = req.usuario.id;  // ✅ OBTENER ID DEL USUARIO
         const montoAbono = parseFloat(monto);
 
-        const respuestaOrden = await axios.get(`http://localhost:3003/api/ordenes/info/${id_orden}`);
+        const respuestaOrden = await axios.get(`http://192.168.100.3:3003/api/ordenes/info/${id_orden}`);
         const orden = respuestaOrden.data;
         const totalOrden = parseFloat(orden.total);
 
@@ -38,13 +38,13 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
         if (Math.abs(totalAcumulado - totalOrden) < 0.01) {
             try {
                 // ✅ DESCONTAR CRÉDITO AL COMPLETAR EL PAGO
-                await axios.post('http://localhost:3001/api/credito/usar', {
+                await axios.post('http://192.168.100.3:3001/api/credito/usar', {
                     usuario_id: id_usuario,
                     monto: totalOrden,
                     cuotas: 1
                 });
 
-                await axios.put(`http://localhost:3003/api/ordenes/${id_orden}/estado`, { estado: 'pagada' });
+                await axios.put(`http://192.168.100.3:3003/api/ordenes/${id_orden}/estado`, { estado: 'pagada' });
                 mensajeCierre = "Pago completado. Orden liquidada";
                 estadoFinal = "pagada";
             } catch (error) {
@@ -77,7 +77,7 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
 router.get('/api/pagos/estado-cuenta/:id_orden', verificarToken, async (req, res) => {
     try {
         const { id_orden } = req.params;
-        const respuestaOrden = await axios.get(`http://localhost:3003/api/ordenes/info/${id_orden}`);
+        const respuestaOrden = await axios.get(`http://192.168.100.3:3003/api/ordenes/info/${id_orden}`);
         const totalOrden = parseFloat(respuestaOrden.data.total);
         const historialPagos = await pagosModel.obtenerPagosPorOrden(id_orden);
         const totalPagado = historialPagos.reduce((acc, pago) => acc + parseFloat(pago.monto), 0);

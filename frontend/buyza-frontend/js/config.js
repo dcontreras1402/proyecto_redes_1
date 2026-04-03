@@ -2,7 +2,7 @@
 
 const CONFIG = {
   // Base URL - cambiar según entorno
-  API_BASE_URL: 'http://localhost', // Cambiar a 'http://192.168.100.2' para desarrollo local
+  API_BASE_URL: 'http://192.168.100.2', // Cambiar a 'http://192.168.100.2' para desarrollo local
   
   // Puertos de microservicios
   PORTS: {
