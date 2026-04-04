@@ -1,18 +1,13 @@
-// config.js - Lee variables del .env y las expone globalmente
-
 const CONFIG = {
-  // Base URL - cambiar según entorno
-  API_BASE_URL: 'http://192.168.100.2', // Cambiar a 'http://192.168.100.2' para desarrollo local
-  
-  // Puertos de microservicios
+  API_BASE_URL: 'http://192.168.100.2',
+
   PORTS: {
     USUARIOS: 3001,
     CATALOGO: 3002,
-    ORDENES: 3003,
-    PAGOS: 3004,
+    ORDENES:  3003,
+    PAGOS:    3004,
   },
 
-  // URLs completas de cada microservicio
   get USUARIOS_URL() {
     return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/usuarios`;
   },
@@ -29,8 +24,3 @@ const CONFIG = {
     return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/credito`;
   },
 };
-
-// Exportar para ser usado
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = CONFIG;
-}

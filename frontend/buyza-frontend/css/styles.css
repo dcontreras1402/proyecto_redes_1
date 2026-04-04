@@ -98,6 +98,28 @@ body {
   box-shadow: 0 6px 18px rgba(108,99,255,0.4);
 }
 
+/* ── HAMBURGER ── */
+.navbar-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+
+.navbar-toggle span {
+  display: block;
+  height: 2px;
+  background: var(--gray-600);
+  border-radius: 2px;
+  transition: var(--transition);
+}
+
 /* ── HERO ── */
 .hero {
   min-height: 100vh;
@@ -558,7 +580,38 @@ footer span {
 /* ── RESPONSIVE ── */
 @media (max-width: 640px) {
   .navbar { padding: 0 1.25rem; }
-  .navbar-links .nav-link { display: none; }
+  .navbar-toggle { display: flex; }
+
+  .navbar-links {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    position: absolute;
+    top: 70px;
+    left: 0; right: 0;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(108,99,255,0.1);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-md);
+    z-index: 99;
+  }
+
+  .navbar-links.open { display: flex; }
+
+  .navbar-links .nav-link {
+    display: block;
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .navbar-links .btn-nav {
+    margin-top: 0.5rem;
+    width: 100%;
+    text-align: center;
+  }
+
   .hero h1 { letter-spacing: -1px; }
   .card { padding: 1.75rem; }
 }

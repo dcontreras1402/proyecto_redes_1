@@ -6,8 +6,6 @@
   <title>Mi perfil - Buyza</title>
   <link rel="stylesheet" href="../css/styles.css">
   <style>
-    .navbar-links { display: flex !important; align-items: center; gap: 1.5rem; }
-    .nav-link { display: inline-block !important; }
     .credito-banner {
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       border-radius: var(--radius);
@@ -61,9 +59,18 @@
         <p id="emailUsuario" style="color:var(--gray-600); font-size:0.9rem"></p>
       </div>
       <div class="profile-info">
-        <div class="info-row"><span class="info-label">Tipo de cuenta</span><span class="info-value" id="rolUsuario"></span></div>
-        <div class="info-row"><span class="info-label">Estado</span><span class="info-value" id="estadoUsuario"></span></div>
-        <div class="info-row"><span class="info-label">Miembro desde</span><span class="info-value" id="fechaUsuario"></span></div>
+        <div class="info-row">
+          <span class="info-label">Tipo de cuenta</span>
+          <span class="info-value" id="rolUsuario"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Estado</span>
+          <span class="info-value" id="estadoUsuario"></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Miembro desde</span>
+          <span class="info-value" id="fechaUsuario"></span>
+        </div>
       </div>
 
       <div class="credito-banner" id="creditoBanner" style="display:none">
@@ -74,7 +81,9 @@
           </div>
           <a href="credito.html" style="background:rgba(255,255,255,0.2); color:white; padding:0.4rem 1rem; border-radius:8px; text-decoration:none; font-size:0.8rem">Ver detalle →</a>
         </div>
-        <div class="credito-bar-bg"><div class="credito-bar-fill" id="bannerBar" style="width:0%"></div></div>
+        <div class="credito-bar-bg">
+          <div class="credito-bar-fill" id="bannerBar" style="width:0%"></div>
+        </div>
         <div class="credito-banner-stats">
           <div><strong id="bannerUsado">$0</strong>Usado</div>
           <div><strong id="bannerTotal">$0</strong>Cupo total</div>
@@ -92,18 +101,39 @@
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script>
+  const rolBadge = {
+    comprador: '<span class="badge badge-buyer">Comprador</span>',
+    vendedor:  '<span class="badge badge-seller">Vendedor</span>',
+    admin:     '<span class="badge badge-admin">Administrador</span>'
+  };
+  const estadoBadge = {
+    activo:    '<span class="badge badge-active">Activo</span>',
+    pendiente: '<span class="badge badge-pending">Pendiente de aprobación</span>',
+    rechazado: '<span class="badge badge-rejected">Rechazado</span>'
+  };
+
   async function cargarPerfil() {
-    if (!localStorage.getItem('token')) return window.location.href = 'login.html';
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+
     try {
-      const user = await usuarios.get('/perfil');
-      if (user.error) return;
+      const res = await usuarios.get('/perfil');
+      const user = res.usuario || res;
+
+      if (!user || !user.nombre) {
+        mostrarAlerta('alerta', 'No se pudo cargar el perfil.', 'error');
+        return;
+      }
 
       document.getElementById('avatar').textContent = user.nombre.charAt(0).toUpperCase();
       document.getElementById('nombreUsuario').textContent = user.nombre;
       document.getElementById('emailUsuario').textContent = user.email;
-      document.getElementById('rolUsuario').textContent = user.rol.toUpperCase();
-      document.getElementById('estadoUsuario').textContent = user.estado.toUpperCase();
-      document.getElementById('fechaUsuario').textContent = new Date(user.fecha_registro).toLocaleDateString();
+      document.getElementById('rolUsuario').innerHTML = rolBadge[user.rol] || user.rol;
+      document.getElementById('estadoUsuario').innerHTML = estadoBadge[user.estado] || user.estado;
+      document.getElementById('fechaUsuario').textContent = new Date(user.fecha_registro).toLocaleDateString('es-CO', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+
       document.getElementById('contenidoPerfil').style.display = 'block';
 
       if (user.rol === 'comprador') {
@@ -112,25 +142,41 @@
       } else if (user.rol === 'vendedor') {
         document.getElementById('linkPublicar').style.display = 'inline-block';
       }
-    } catch (e) { console.error(e); }
+
+    } catch (e) {
+      console.error('Error cargando perfil:', e);
+      if (e && (e.status === 401 || e.status === 403)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        window.location.href = 'login.html';
+        return;
+      }
+      mostrarAlerta('alerta', 'Error al cargar el perfil. Intenta de nuevo.', 'error');
+    }
   }
 
   async function cargarCredito() {
     try {
       const data = await credito.get('');
-      if (data.error) return;
-      const cupoDisp = parseFloat(data.cupo_disponible) || 0;
-      const cupoTotal = parseFloat(data.cupo_total) || 0;
-      const usado = cupoTotal - cupoDisp;
-      const pct = cupoTotal > 0 ? (usado / cupoTotal * 100) : 0;
+      if (!data || data.error) return;
 
-      document.getElementById('bannerCupo').textContent = formatPeso(cupoDisp);
-      document.getElementById('bannerUsado').textContent = formatPeso(usado);
-      document.getElementById('bannerTotal').textContent = formatPeso(cupoTotal);
-      document.getElementById('bannerCompras').textContent = data.compras_completadas;
+      const cupoTotal = parseFloat(data.cupo_total) || 0;
+      const cupoDisp  = parseFloat(data.cupo_disponible) || 0;
+      const usado     = cupoTotal - cupoDisp;
+      const pct       = cupoTotal > 0 ? (usado / cupoTotal * 100) : 0;
+
+      document.getElementById('bannerCupo').textContent     = formatPeso(cupoDisp);
+      document.getElementById('bannerUsado').textContent    = formatPeso(usado);
+      document.getElementById('bannerTotal').textContent    = formatPeso(cupoTotal);
+      document.getElementById('bannerCompras').textContent  = data.compras_completadas || 0;
       document.getElementById('creditoBanner').style.display = 'block';
-      setTimeout(() => { document.getElementById('bannerBar').style.width = pct + '%'; }, 300);
-    } catch (e) {}
+
+      setTimeout(() => {
+        document.getElementById('bannerBar').style.width = pct.toFixed(1) + '%';
+      }, 300);
+    } catch (e) {
+      console.warn('No se pudo cargar el crédito:', e);
+    }
   }
 
   window.onload = cargarPerfil;
