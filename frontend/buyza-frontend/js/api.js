@@ -1,54 +1,33 @@
-// API HELPER - Funciones para llamadas HTTP
-// Nota: Requiere que config.js esté cargado primero
-
 const api = {
-  async post(endpoint, data, base = CONFIG.USUARIOS_URL) {
+  async request(method, endpoint, data = null, base = CONFIG.USUARIOS_URL) {
     const token = localStorage.getItem('token');
-    const res = await fetch(`${base}${endpoint}`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    });
-    return res.json();
+    const options = {
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
+
+    if (data) options.body = JSON.stringify(data);
+
+    try {
+      const res = await fetch(`${base}${endpoint}`, options);
+      const result = await res.json();
+      
+      if (!res.ok) throw result; 
+      return result;
+    } catch (err) {
+      console.error(`Error en ${method} ${endpoint}:`, err);
+      throw err;
+    }
   },
 
-  async get(endpoint, base = CONFIG.USUARIOS_URL) {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${base}${endpoint}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return res.json();
-  },
-
-  async put(endpoint, data, base = CONFIG.USUARIOS_URL) {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${base}${endpoint}`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': `Bearer ${token}` 
-      },
-      body: JSON.stringify(data)
-    });
-    return res.json();
-  },
-
-  async delete(endpoint, base = CONFIG.USUARIOS_URL) {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${base}${endpoint}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    return res.json();
-  }
+  post(ep, data, base) { return this.request('POST', ep, data, base); },
+  get(ep, base) { return this.request('GET', ep, null, base); },
+  put(ep, data, base) { return this.request('PUT', ep, data, base); },
+  delete(ep, base) { return this.request('DELETE', ep, null, base); }
 };
-
-// ============================================
-// SERVICIOS POR MICROSERVICIO
-// ============================================
 
 const usuarios = {
   post: (ep, data) => api.post(ep, data, CONFIG.USUARIOS_URL),
@@ -78,10 +57,6 @@ const credito = {
   get: (ep = '') => api.get(ep, CONFIG.CREDITO_URL),
   post: (ep, data) => api.post(ep, data, CONFIG.CREDITO_URL)
 };
-
-// ============================================
-// UTILIDADES GENERALES
-// ============================================
 
 function getUsuario() {
   const data = localStorage.getItem('usuario');

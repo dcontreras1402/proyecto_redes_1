@@ -9,7 +9,8 @@ const app = express();
 app.use(morgan('dev')); 
 app.use(cors());
 app.use(express.json());
-app.use(pagosController); 
+
+app.use('/api/pagos', pagosController); 
 
 app.get('/health', (req, res) => {
     res.json({ 
@@ -19,6 +20,7 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3004;
-app.listen(PORT, () => { 
-    console.log(`Puerto ${PORT}`);
+
+app.listen(PORT, '0.0.0.0', () => { 
+    console.log(`Microservicio de Pagos escuchando en el puerto ${PORT}`);
 });

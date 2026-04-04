@@ -10,9 +10,12 @@ app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
 
-app.use(productosController);
+// Es recomendable usar un prefijo para mantener consistencia con api.js
+app.use('/api/catalogo', productosController);
 
 const PORT = process.env.PORT || 3002;
-app.listen(PORT, () => {
-    console.log(`Puerto ${PORT}`);
+
+// Agregamos '0.0.0.0' para permitir conexiones desde la IP de la VM (red privada)
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor de Catálogo activo en puerto ${PORT}`);
 });
