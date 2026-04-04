@@ -12,6 +12,7 @@
   <a class="navbar-brand" href="../index.html">Buyza</a>
   <div class="navbar-links">
     <a href="../index.html" class="nav-link">Inicio</a>
+    <a href="perfil.html" class="nav-link">Mi Perfil</a>
     <div id="btn-vendedor-container"></div>
     <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesion</a>
   </div>
@@ -23,16 +24,13 @@
   </div>
   <div id="alerta" class="alert"></div>
   <div id="grid-productos" class="features-grid">
-    <p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Cargando productos...</p>
+    <p id="loading-text" style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Cargando productos...</p>
   </div>
 </div>
 
-<!-- ✅ CARGAR CONFIG PRIMERO -->
 <script src="../js/config.js"></script>
-<!-- ✅ DESPUÉS API.JS -->
 <script src="../js/api.js"></script>
 <script>
-  // ✅ VERIFICAR QUE ESTÁ AUTENTICADO
   const user = getUsuario();
   if (!user || !localStorage.getItem('token')) {
     window.location.href = 'login.html';
@@ -44,21 +42,18 @@
   }
 
   async function cargarProductos() {
+    const grid = document.getElementById('grid-productos');
     try {
-      // ✅ AGREGAR MANEJO DE ERRORES
-      const productos = await catalogo.get('/');
+      const productos = await catalogo.get('');
       
       if (!productos || productos.error) {
         mostrarAlerta('alerta', productos?.error || 'Error al cargar productos', 'error');
-        document.getElementById('grid-productos').innerHTML = 
-          '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No se pudo cargar los productos. Recarga la página.</p>';
+        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No se pudo cargar los productos.</p>';
         return;
       }
       
-      const grid = document.getElementById('grid-productos');
-      
       if (!Array.isArray(productos) || productos.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No hay productos disponibles en este momento.</p>';
+        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No hay productos disponibles.</p>';
         return;
       }
 
@@ -75,7 +70,8 @@
         </div>
       `).join('');
     } catch (err) {
-      mostrarAlerta('alerta', 'Error de conexión: ' + err.message, 'error');
+      mostrarAlerta('alerta', 'Error de conexión con el servidor', 'error');
+      grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Error de red.</p>';
     }
   }
 
@@ -85,18 +81,22 @@
       return;
     }
     
-    const res = await ordenes.post('/crear', { id_producto });
-    if(res.id_orden) {
-      mostrarAlerta('alerta', 'Orden creada correctamente', 'success');
-      setTimeout(() => {
-        window.location.href = `pago.html?id=${res.id_orden}`;
-      }, 1500);
-    } else {
-      mostrarAlerta('alerta', res.error || 'Error al procesar compra', 'error');
+    try {
+      const res = await ordenes.post('/crear', { id_producto });
+      if(res.id_orden) {
+        mostrarAlerta('alerta', 'Orden creada correctamente', 'success');
+        setTimeout(() => {
+          window.location.href = `pago.html?id=${res.id_orden}`;
+        }, 1500);
+      } else {
+        mostrarAlerta('alerta', res.error || 'Error al procesar compra', 'error');
+      }
+    } catch (err) {
+      mostrarAlerta('alerta', 'Error al procesar la orden', 'error');
     }
   }
 
-  cargarProductos();
+  window.onload = cargarProductos;
 </script>
 </body>
 </html>

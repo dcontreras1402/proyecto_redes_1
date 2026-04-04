@@ -6,6 +6,8 @@
   <title>Mi perfil - Buyza</title>
   <link rel="stylesheet" href="../css/styles.css">
   <style>
+    .navbar-links { display: flex !important; align-items: center; gap: 1.5rem; }
+    .nav-link { display: inline-block !important; }
     .credito-banner {
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       border-radius: var(--radius);
@@ -15,14 +17,6 @@
       position: relative;
       overflow: hidden;
     }
-    .credito-banner::before {
-      content: '';
-      position: absolute;
-      width: 200px; height: 200px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 50%;
-      top: -60px; right: -40px;
-    }
     .credito-banner-top {
       display: flex;
       justify-content: space-between;
@@ -30,41 +24,16 @@
       margin-bottom: 1rem;
       position: relative; z-index: 1;
     }
-    .credito-banner-label { font-size: 0.8rem; opacity: 0.8; margin-bottom: 0.2rem; }
     .credito-banner-amount { font-size: 2rem; font-weight: 800; letter-spacing: -1px; }
-    .credito-banner-link {
-      background: rgba(255,255,255,0.2);
-      color: white;
-      padding: 0.4rem 1rem;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-decoration: none;
-      backdrop-filter: blur(4px);
-      transition: background 0.2s;
-    }
-    .credito-banner-link:hover { background: rgba(255,255,255,0.3); }
     .credito-bar-bg {
       height: 6px;
       background: rgba(255,255,255,0.2);
       border-radius: 50px;
       overflow: hidden;
-      position: relative; z-index: 1;
       margin-bottom: 0.75rem;
     }
-    .credito-bar-fill {
-      height: 100%;
-      background: white;
-      border-radius: 50px;
-      transition: width 1s ease;
-    }
-    .credito-banner-stats {
-      display: flex;
-      gap: 1.5rem;
-      font-size: 0.82rem;
-      opacity: 0.9;
-      position: relative; z-index: 1;
-    }
+    .credito-bar-fill { height: 100%; background: white; transition: width 1s ease; }
+    .credito-banner-stats { display: flex; gap: 1.5rem; font-size: 0.82rem; opacity: 0.9; }
     .credito-banner-stats strong { display: block; font-size: 1rem; font-weight: 700; }
   </style>
 </head>
@@ -73,11 +42,12 @@
 <nav class="navbar">
   <a class="navbar-brand" href="../index.html">Buyza</a>
   <div class="navbar-links">
+    <a href="../index.html" class="nav-link">Inicio</a>
     <a href="catalogo.html" class="nav-link">Catálogo</a>
     <a href="perfil.html" class="nav-link active">Mi Perfil</a>
     <a href="credito.html" class="nav-link" id="linkCredito" style="display:none">Mi Crédito</a>
     <a href="nuevo-producto.html" class="nav-link" id="linkPublicar" style="display:none">+ Publicar</a>
-    <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesion</a>
+    <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesión</a>
   </div>
 </nav>
 
@@ -91,94 +61,66 @@
         <p id="emailUsuario" style="color:var(--gray-600); font-size:0.9rem"></p>
       </div>
       <div class="profile-info">
-        <div class="info-row">
-          <span class="info-label">Tipo de cuenta</span>
-          <span class="info-value" id="rolUsuario"></span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Estado</span>
-          <span class="info-value" id="estadoUsuario"></span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Miembro desde</span>
-          <span class="info-value" id="fechaUsuario"></span>
-        </div>
+        <div class="info-row"><span class="info-label">Tipo de cuenta</span><span class="info-value" id="rolUsuario"></span></div>
+        <div class="info-row"><span class="info-label">Estado</span><span class="info-value" id="estadoUsuario"></span></div>
+        <div class="info-row"><span class="info-label">Miembro desde</span><span class="info-value" id="fechaUsuario"></span></div>
       </div>
 
-      <!-- Banner credito solo compradores -->
       <div class="credito-banner" id="creditoBanner" style="display:none">
         <div class="credito-banner-top">
           <div>
-            <div class="credito-banner-label">Cupo disponible</div>
+            <div style="font-size:0.8rem; opacity:0.8">Cupo disponible</div>
             <div class="credito-banner-amount" id="bannerCupo">$0</div>
           </div>
-          <a href="credito.html" class="credito-banner-link">Ver detalle →</a>
+          <a href="credito.html" style="background:rgba(255,255,255,0.2); color:white; padding:0.4rem 1rem; border-radius:8px; text-decoration:none; font-size:0.8rem">Ver detalle →</a>
         </div>
-        <div class="credito-bar-bg">
-          <div class="credito-bar-fill" id="bannerBar" style="width:0%"></div>
-        </div>
+        <div class="credito-bar-bg"><div class="credito-bar-fill" id="bannerBar" style="width:0%"></div></div>
         <div class="credito-banner-stats">
           <div><strong id="bannerUsado">$0</strong>Usado</div>
           <div><strong id="bannerTotal">$0</strong>Cupo total</div>
-          <div><strong id="bannerCompras">0</strong>Compras completadas</div>
+          <div><strong id="bannerCompras">0</strong>Compras</div>
         </div>
       </div>
 
       <div style="margin-top:1.5rem">
-        <button onclick="cerrarSesion()" class="btn btn-outline btn-full">Cerrar sesion</button>
+        <button onclick="cerrarSesion()" class="btn btn-outline btn-full">Cerrar sesión</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ✅ CARGAR CONFIG PRIMERO -->
 <script src="../js/config.js"></script>
-<!-- ✅ DESPUÉS CARGAR API.JS -->
 <script src="../js/api.js"></script>
 <script>
-  const rolBadge = {
-    comprador: '<span class="badge badge-buyer">Comprador</span>',
-    vendedor:  '<span class="badge badge-seller">Vendedor</span>',
-    admin:     '<span class="badge badge-admin">Administrador</span>'
-  };
-  const estadoBadge = {
-    activo:    '<span class="badge badge-active">Activo</span>',
-    pendiente: '<span class="badge badge-pending">Pendiente de aprobacion</span>',
-    rechazado: '<span class="badge badge-rejected">Rechazado</span>'
-  };
-
   async function cargarPerfil() {
-    if (!localStorage.getItem('token')) { window.location.href = 'login.html'; return; }
+    if (!localStorage.getItem('token')) return window.location.href = 'login.html';
     try {
       const user = await usuarios.get('/perfil');
-      if (user.error) { mostrarAlerta('alerta', user.error, 'error'); return; }
+      if (user.error) return;
 
       document.getElementById('avatar').textContent = user.nombre.charAt(0).toUpperCase();
       document.getElementById('nombreUsuario').textContent = user.nombre;
       document.getElementById('emailUsuario').textContent = user.email;
-      document.getElementById('rolUsuario').innerHTML = rolBadge[user.rol] || user.rol;
-      document.getElementById('estadoUsuario').innerHTML = estadoBadge[user.estado] || user.estado;
-      document.getElementById('fechaUsuario').textContent = new Date(user.fecha_registro)
-        .toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
+      document.getElementById('rolUsuario').textContent = user.rol.toUpperCase();
+      document.getElementById('estadoUsuario').textContent = user.estado.toUpperCase();
+      document.getElementById('fechaUsuario').textContent = new Date(user.fecha_registro).toLocaleDateString();
       document.getElementById('contenidoPerfil').style.display = 'block';
 
-      // Mostrar opciones según el rol
       if (user.rol === 'comprador') {
-        document.getElementById('linkCredito').style.display = 'inline';
+        document.getElementById('linkCredito').style.display = 'inline-block';
         cargarCredito();
+      } else if (user.rol === 'vendedor') {
+        document.getElementById('linkPublicar').style.display = 'inline-block';
       }
-      if (user.rol === 'vendedor') {
-        document.getElementById('linkPublicar').style.display = 'inline';
-      }
-    } catch { mostrarAlerta('alerta', 'Error al cargar el perfil', 'error'); }
+    } catch (e) { console.error(e); }
   }
 
   async function cargarCredito() {
     try {
       const data = await credito.get('');
       if (data.error) return;
-      const cupoDisp = parseFloat(data.cupo_disponible);  // ✅ CONVERTIR A NÚMERO
-      const cupoTotal = parseFloat(data.cupo_total);      // ✅ CONVERTIR A NÚMERO
+      const cupoDisp = parseFloat(data.cupo_disponible) || 0;
+      const cupoTotal = parseFloat(data.cupo_total) || 0;
       const usado = cupoTotal - cupoDisp;
       const pct = cupoTotal > 0 ? (usado / cupoTotal * 100) : 0;
 
@@ -188,10 +130,10 @@
       document.getElementById('bannerCompras').textContent = data.compras_completadas;
       document.getElementById('creditoBanner').style.display = 'block';
       setTimeout(() => { document.getElementById('bannerBar').style.width = pct + '%'; }, 300);
-    } catch {}
+    } catch (e) {}
   }
 
-  cargarPerfil();
+  window.onload = cargarPerfil;
 </script>
 </body>
 </html>
