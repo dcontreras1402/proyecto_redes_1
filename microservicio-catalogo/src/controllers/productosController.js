@@ -3,7 +3,7 @@ const router = Router();
 const productosModel = require('../models/productosModel');
 const { verificarToken, soloAdmin } = require('../middlewares/authMiddleware');
 
-router.get('/api/catalogo', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const productos = await productosModel.obtenerProductosActivos();
         res.status(200).json(productos);
@@ -12,7 +12,7 @@ router.get('/api/catalogo', async (req, res) => {
     }
 });
 
-router.get('/api/catalogo/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const producto = await productosModel.obtenerProductoPorId(id);
@@ -23,7 +23,7 @@ router.get('/api/catalogo/:id', async (req, res) => {
     }
 });
 
-router.post('/api/catalogo', verificarToken, async (req, res) => {
+router.post('/', verificarToken, async (req, res) => {
     try {
         const { nombre, descripcion, precio, cantidad } = req.body;
         const id_vendedor = req.usuario.id;
@@ -34,7 +34,7 @@ router.post('/api/catalogo', verificarToken, async (req, res) => {
     }
 });
 
-router.put('/api/catalogo/:id', verificarToken, async (req, res) => {
+router.put('/:id', verificarToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { nombre, descripcion, precio, cantidad } = req.body;
@@ -46,7 +46,7 @@ router.put('/api/catalogo/:id', verificarToken, async (req, res) => {
     }
 });
 
-router.put('/api/catalogo/:id/desactivar', verificarToken, async (req, res) => {
+router.put('/:id/desactivar', verificarToken, async (req, res) => {
     try {
         const { id } = req.params;
         const id_vendedor = req.usuario.id;
@@ -57,7 +57,7 @@ router.put('/api/catalogo/:id/desactivar', verificarToken, async (req, res) => {
     }
 });
 
-router.put('/api/catalogo/:id/reducir-stock', async (req, res) => {
+router.put('/:id/reducir-stock', async (req, res) => {
     try {
         const { id } = req.params;
         const { cantidad_comprada } = req.body;
@@ -68,7 +68,7 @@ router.put('/api/catalogo/:id/reducir-stock', async (req, res) => {
     }
 });
 
-router.put('/api/catalogo/:id/aprobar', verificarToken, soloAdmin, async (req, res) => {
+router.put('/:id/aprobar', verificarToken, soloAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         await productosModel.aprobarProducto(id);

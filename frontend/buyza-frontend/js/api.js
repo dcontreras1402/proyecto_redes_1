@@ -1,32 +1,3 @@
-// ── CONFIG ──────────────────────────────────────────────
-const CONFIG = {
-  API_BASE_URL: 'http://192.168.100.3',
-
-  PORTS: {
-    USUARIOS: 3001,
-    CATALOGO: 3002,
-    ORDENES:  3003,
-    PAGOS:    3004,
-  },
-
-  get USUARIOS_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/usuarios`;
-  },
-  get CATALOGO_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.CATALOGO}/api/catalogo`;
-  },
-  get ORDENES_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.ORDENES}/api/ordenes`;
-  },
-  get PAGOS_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.PAGOS}/api/pagos`;
-  },
-  get CREDITO_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/credito`;
-  },
-};
-
-// ── API ─────────────────────────────────────────────────
 const api = {
   request: async function(method, endpoint, data, base) {
     const token = localStorage.getItem('token');
