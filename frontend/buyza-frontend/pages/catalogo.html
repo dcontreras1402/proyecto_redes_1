@@ -14,7 +14,7 @@
     <a href="../index.html" class="nav-link">Inicio</a>
     <a href="perfil.html" class="nav-link">Mi Perfil</a>
     <div id="btn-vendedor-container"></div>
-    <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesion</a>
+    <a href="#" onclick="cerrarSesion()" class="btn-nav">Cerrar sesión</a>
   </div>
 </nav>
 
@@ -28,10 +28,11 @@
   </div>
 </div>
 
-<script src="../js/config.js"></script>
-<script src="../js/api.js"></script>
+<script src="../js/config.js?v=1.1"></script>
+<script src="../js/api.js?v=1.1"></script>
 <script>
   const user = getUsuario();
+  
   if (!user || !localStorage.getItem('token')) {
     window.location.href = 'login.html';
   }
@@ -52,12 +53,14 @@
         return;
       }
       
-      if (!Array.isArray(productos) || productos.length === 0) {
+      const lista = Array.isArray(productos) ? productos : (productos.productos || []);
+
+      if (lista.length === 0) {
         grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No hay productos disponibles.</p>';
         return;
       }
 
-      grid.innerHTML = productos.map(p => `
+      grid.innerHTML = lista.map(p => `
         <div class="feature-card">
           <div class="feature-icon" style="background:var(--primary-light); color:var(--primary); width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:1rem">📦</div>
           <h3 style="margin-bottom:0.5rem">${p.nombre}</h3>
@@ -66,30 +69,25 @@
             <span style="font-weight:800; color:var(--primary); font-size:1.2rem">${formatPeso(p.precio)}</span>
             <button onclick="comprar(${p.id})" class="btn btn-outline" style="padding:0.4rem 1rem; font-size:0.8rem">Comprar</button>
           </div>
-          <div style="font-size:0.7rem; color:var(--gray-400); margin-top:0.5rem">Vendido por: ${p.vendedor || 'Usuario'}</div>
+          <div style="font-size:0.7rem; color:var(--gray-400); margin-top:0.5rem">Vendido por: ${p.vendedor_nombre || p.vendedor || 'Usuario'}</div>
         </div>
       `).join('');
     } catch (err) {
       mostrarAlerta('alerta', 'Error de conexión con el servidor', 'error');
-      grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Error de red.</p>';
+      grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Error de red o configuración.</p>';
     }
   }
 
   async function comprar(id_producto) {
-    if(!user) {
-      window.location.href = 'login.html';
-      return;
-    }
-    
     try {
       const res = await ordenes.post('/crear', { id_producto });
-      if(res.id_orden) {
+      if(res && res.id_orden) {
         mostrarAlerta('alerta', 'Orden creada correctamente', 'success');
         setTimeout(() => {
           window.location.href = `pago.html?id=${res.id_orden}`;
-        }, 1500);
+        }, 1200);
       } else {
-        mostrarAlerta('alerta', res.error || 'Error al procesar compra', 'error');
+        mostrarAlerta('alerta', res?.error || 'Error al procesar compra', 'error');
       }
     } catch (err) {
       mostrarAlerta('alerta', 'Error al procesar la orden', 'error');

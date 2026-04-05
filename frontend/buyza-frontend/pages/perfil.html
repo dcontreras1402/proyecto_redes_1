@@ -98,8 +98,8 @@
   </div>
 </div>
 
-<script src="../js/config.js"></script>
-<script src="../js/api.js"></script>
+<script src="../js/config.js?v=1.1"></script>
+<script src="../js/api.js?v=1.1"></script>
 <script>
   const rolBadge = {
     comprador: '<span class="badge badge-buyer">Comprador</span>',
@@ -146,8 +146,7 @@
     } catch (e) {
       console.error('Error cargando perfil:', e);
       if (e && (e.status === 401 || e.status === 403)) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
+        localStorage.clear();
         window.location.href = 'login.html';
         return;
       }
