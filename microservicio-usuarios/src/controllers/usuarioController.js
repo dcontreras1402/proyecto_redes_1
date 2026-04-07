@@ -3,14 +3,14 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // Registro
-const registrar = async (req, res) => { // Controlador para registrar un nuevo usuario. Recibe los datos del usuario (nombre, email, password y rol) desde el cuerpo de la solicitud. Verifica si el email ya está registrado, encripta la contraseña utilizando bcrypt, y luego inserta el nuevo usuario en la base de datos. Si el rol es "vendedor", el estado del usuario se establece como "pendiente" hasta que un administrador lo apruebe. Responde con un mensaje adecuado según el resultado del registro.
+const registrar = async (req, res) => {
     const { nombre, email, password, rol } = req.body;
     try {
         // Verificar si el email ya existe
         const [existe] = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
         if (existe.length > 0) return res.status(400).json({ error: 'El email ya está registrado' });
 
-        const hash = await bcrypt.hash(password, 10); // Encripta la contraseña utilizando bcrypt con un salt de 10 rondas. Esto asegura que las contraseñas se almacenen de forma segura en la base de datos, protegiendo contra ataques de fuerza bruta y otros métodos de cracking de contraseñas.
+        const hash = await bcrypt.hash(password, 10);
         const estado = rol === 'vendedor' ? 'pendiente' : 'activo';
         const rolFinal = rol || 'comprador';
 
@@ -31,10 +31,10 @@ const registrar = async (req, res) => { // Controlador para registrar un nuevo u
 };
 
 // Login
-const login = async (req, res) => { // Controlador para el inicio de sesión de un usuario. Recibe el email y la contraseña desde el cuerpo de la solicitud. Busca el usuario en la base de datos por su email, verifica que exista y que su estado no sea "pendiente" o "rechazado". Luego compara la contraseña proporcionada con la contraseña almacenada utilizando bcrypt. Si la autenticación es exitosa, genera un token JWT que incluye el ID y el rol del usuario, y responde con el token y los datos básicos del usuario.
+const login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const [rows] = await db.execute('SELECT * FROM usuarios WHERE email = ?', [email]); // Busca el usuario en la base de datos utilizando su email. Si no se encuentra ningún usuario con ese email, responde con un error 404 indicando que el usuario no fue encontrado.
+        const [rows] = await db.execute('SELECT * FROM usuarios WHERE email = ?', [email]);
         if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
 
         const user = rows[0];
@@ -44,13 +44,13 @@ const login = async (req, res) => { // Controlador para el inicio de sesión de 
         if (user.estado === 'rechazado')
             return res.status(403).json({ error: 'Tu cuenta fue rechazada. Contacta al administrador' });
 
-        const valid = await bcrypt.compare(password, user.password); // Compara la contraseña proporcionada con la contraseña almacenada en la base de datos utilizando bcrypt. Si las contraseñas no coinciden, responde con un error 401 indicando que la contraseña es incorrecta.
+        const valid = await bcrypt.compare(password, user.password);
         if (!valid) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
-        const token = jwt.sign( // Genera un token JWT utilizando jsonwebtoken. El token incluye el ID y el rol del usuario en su payload, y se firma con una clave secreta definida en las variables de entorno. El token tiene una expiración de 8 horas, lo que significa que el usuario deberá volver a autenticarse después de ese período para obtener un nuevo token.
+        const token = jwt.sign(
             { id: user.id, rol: user.rol },
             process.env.JWT_SECRET,
-            { expiresIn: '8h' }
+            { expiresIn: '7d' }
         );
         res.json({
             token,
@@ -62,7 +62,7 @@ const login = async (req, res) => { // Controlador para el inicio de sesión de 
 };
 
 // Obtener perfil propio
-const obtenerPerfil = async (req, res) => { // Controlador para obtener el perfil del usuario autenticado. Utiliza el ID del usuario que se encuentra en el objeto req.usuario (establecido por el middleware de autenticación) para buscar los datos del usuario en la base de datos. Si el usuario no se encuentra, responde con un error 404. Si se encuentra, responde con los datos básicos del usuario (ID, nombre, email, rol, estado y fecha de registro).
+const obtenerPerfil = async (req, res) => {
     try {
         const [rows] = await db.execute(
             'SELECT id, nombre, email, rol, estado, fecha_registro FROM usuarios WHERE id = ?',
@@ -76,7 +76,7 @@ const obtenerPerfil = async (req, res) => { // Controlador para obtener el perfi
 };
 
 // Listar todos (admin)
-const listarUsuarios = async (req, res) => { // Controlador para listar todos los usuarios. Este controlador está destinado a ser utilizado por administradores. Consulta la base de datos para obtener una lista de todos los usuarios, ordenados por fecha de registro en orden descendente. Responde con un array de objetos que contienen los datos básicos de cada usuario (ID, nombre, email, rol, estado y fecha de registro). Si ocurre algún error durante la consulta a la base de datos, responde con un error 500.
+const listarUsuarios = async (req, res) => {
     try {
         const [rows] = await db.execute(
             'SELECT id, nombre, email, rol, estado, fecha_registro FROM usuarios ORDER BY fecha_registro DESC'
@@ -88,7 +88,7 @@ const listarUsuarios = async (req, res) => { // Controlador para listar todos lo
 };
 
 // Aprobar o rechazar vendedor (admin)
-const actualizarEstado = async (req, res) => { // Controlador para actualizar el estado de un usuario vendedor. Este controlador está destinado a ser utilizado por administradores para aprobar o rechazar cuentas de vendedores. Recibe el ID del usuario a actualizar desde los parámetros de la ruta y el nuevo estado desde el cuerpo de la solicitud. Verifica que el nuevo estado sea válido (debe ser "activo", "pendiente" o "rechazado"). Si el estado no es válido, responde con un error 400. Luego, actualiza el estado del usuario en la base de datos. Si no se encuentra ningún usuario con el ID proporcionado, responde con un error 404. Si la actualización es exitosa, responde con un mensaje indicando que el estado del usuario ha sido actualizado.
+const actualizarEstado = async (req, res) => {
     const { id } = req.params;
     const { estado } = req.body;
     const estadosValidos = ['activo', 'pendiente', 'rechazado'];
@@ -104,7 +104,7 @@ const actualizarEstado = async (req, res) => { // Controlador para actualizar el
 };
 
 // Eliminar usuario (admin)
-const eliminarUsuario = async (req, res) => { // Controlador para eliminar un usuario. Este controlador está destinado a ser utilizado por administradores para eliminar cuentas de usuarios. Recibe el ID del usuario a eliminar desde los parámetros de la ruta. Intenta eliminar el usuario de la base de datos utilizando su ID. Si no se encuentra ningún usuario con el ID proporcionado, responde con un error 404. Si la eliminación es exitosa, responde con un mensaje indicando que el usuario ha sido eliminado correctamente. Si ocurre algún error durante la operación, responde con un error 500.
+const eliminarUsuario = async (req, res) => {
     const { id } = req.params;
     try {
         const [result] = await db.execute('DELETE FROM usuarios WHERE id = ?', [id]);
