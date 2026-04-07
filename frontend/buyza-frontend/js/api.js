@@ -15,15 +15,39 @@ const api = {
 
     try {
       const res = await fetch(`${base}${endpoint}`, options);
-      const result = await res.json();
 
+      let result;
+
+      // Manejo seguro de respuesta (JSON o HTML)
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await res.json();
+      } else {
+        const text = await res.text();
+        throw {
+          error: 'Respuesta no válida del servidor',
+          detalle: text,
+          status: res.status
+        };
+      }
+
+      // Manejo de errores HTTP
       if (!res.ok) {
+
+        // TOKEN EXPIRADO O INVÁLIDO
+        if (res.status === 403) {
+          cerrarSesion();
+          window.location.href = 'login.html';
+          return;
+        }
+
         const err = result || {};
         err.status = res.status;
         throw err;
       }
 
       return result;
+
     } catch (err) {
       console.error(`Error en ${method} ${endpoint}:`, err);
       throw err;
@@ -35,6 +59,8 @@ const api = {
   put(ep, data, base)    { return this.request('PUT',    ep, data, base); },
   delete(ep, base)       { return this.request('DELETE', ep, null, base); }
 };
+
+// ==================== SERVICIOS ====================
 
 const usuarios = {
   post: (ep, data) => api.post(ep, data, CONFIG.USUARIOS_URL),
@@ -64,6 +90,8 @@ const credito = {
   get:  (ep = '')  => api.get(ep, CONFIG.CREDITO_URL),
   post: (ep, data) => api.post(ep, data, CONFIG.CREDITO_URL),
 };
+
+// ==================== UTILS ====================
 
 function getUsuario() {
   const data = localStorage.getItem('usuario');
