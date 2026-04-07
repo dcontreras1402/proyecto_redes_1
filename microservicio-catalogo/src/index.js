@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const productosController = require('./controllers/productosController');
+const catalogoController = require('./controllers/catalogoController');
 
 const app = express();
 
@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // Es recomendable usar un prefijo para mantener consistencia con api.js
-app.use('/api/catalogo', productosController);
+app.use('/api/catalogo', catalogoController);
 
 const PORT = process.env.PORT || 3002;
 
