@@ -4,13 +4,13 @@ const pagosModel = require('../models/pagosModel');
 const axios = require('axios');
 const { verificarToken } = require('../middlewares/authMiddleware');
 
-router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
+router.post('/procesar', verificarToken, async (req, res) => {
     try {
         const { id_orden, metodo_pago, monto } = req.body;
-        const id_usuario = req.usuario.id;  // ✅ OBTENER ID DEL USUARIO
+        const id_usuario = req.usuario.id;
         const montoAbono = parseFloat(monto);
 
-        const respuestaOrden = await axios.get(`http://192.168.100.3:3003/api/ordenes/info/${id_orden}`);
+        const respuestaOrden = await axios.get(`http://192.168.100.2:3003/api/ordenes/info/${id_orden}`);
         const orden = respuestaOrden.data;
         const totalOrden = parseFloat(orden.total);
 
@@ -22,10 +22,10 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
         const totalAcumulado = pagosPrevios + montoAbono;
 
         if (totalAcumulado > (totalOrden + 0.01)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'El monto excede el saldo pendiente',
                 total_orden: totalOrden,
-                saldo_actual: totalOrden - pagosPrevios 
+                saldo_actual: totalOrden - pagosPrevios
             });
         }
 
@@ -34,22 +34,19 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
 
         let mensajeCierre = "Abono registrado con éxito";
         let estadoFinal = "pendiente";
-        
+
         if (Math.abs(totalAcumulado - totalOrden) < 0.01) {
             try {
-                // ✅ DESCONTAR CRÉDITO AL COMPLETAR EL PAGO
-                await axios.post('http://192.168.100.3:3001/api/credito/usar', {
+                await axios.post('http://192.168.100.2:3001/api/credito/usar', {
                     usuario_id: id_usuario,
                     monto: totalOrden,
                     cuotas: 1
                 });
 
-                await axios.put(`http://192.168.100.3:3003/api/ordenes/${id_orden}/estado`, { estado: 'pagada' });
+                await axios.put(`http://192.168.100.2:3003/api/ordenes/${id_orden}/estado`, { estado: 'pagada' });
                 mensajeCierre = "Pago completado. Orden liquidada";
                 estadoFinal = "pagada";
-            } catch (error) {
-                console.error('Error en liquidación:', error.message);
-            }
+            } catch (error) {}
         }
 
         res.status(201).json({
@@ -65,19 +62,19 @@ router.post('/api/pagos/procesar', verificarToken, async (req, res) => {
 
     } catch (error) {
         if (error.response) {
-            return res.status(error.response.status).json({ 
-                error: 'Fallo en comunicación con otros servicios', 
-                detalle: error.response.data 
+            return res.status(error.response.status).json({
+                error: 'Fallo en comunicación con otros servicios',
+                detalle: error.response.data
             });
         }
         res.status(500).json({ error: 'Error interno en Pagos', mensaje: error.message });
     }
 });
 
-router.get('/api/pagos/estado-cuenta/:id_orden', verificarToken, async (req, res) => {
+router.get('/estado-cuenta/:id_orden', verificarToken, async (req, res) => {
     try {
         const { id_orden } = req.params;
-        const respuestaOrden = await axios.get(`http://192.168.100.3:3003/api/ordenes/info/${id_orden}`);
+        const respuestaOrden = await axios.get(`http://192.168.100.2:3003/api/ordenes/info/${id_orden}`);
         const totalOrden = parseFloat(respuestaOrden.data.total);
         const historialPagos = await pagosModel.obtenerPagosPorOrden(id_orden);
         const totalPagado = historialPagos.reduce((acc, pago) => acc + parseFloat(pago.monto), 0);
@@ -98,7 +95,7 @@ router.get('/api/pagos/estado-cuenta/:id_orden', verificarToken, async (req, res
     }
 });
 
-router.get('/api/pagos/suma/:id', async (req, res) => {
+router.get('/suma/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const total = await pagosModel.obtenerSumaPagosPorOrden(id);
