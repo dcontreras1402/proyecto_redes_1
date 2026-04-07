@@ -1,69 +1,251 @@
-# proyecto_redes_1 (Local)
+# 🛒 Buyza - Marketplace con Microservicios
+
+## 📌 Descripción
+
+**Buyza** es una plataforma tipo marketplace desarrollada bajo arquitectura de **microservicios**, donde los usuarios pueden registrarse como compradores o vendedores, publicar productos, realizar compras y gestionar pagos.
+
+El sistema implementa autenticación con **JWT**, control de roles y comunicación entre servicios mediante HTTP.
 
 ---
 
-# 🛒 Marketplace Microservices Ecosystem
+## 🧩 Arquitectura
 
-Este proyecto es una arquitectura de microservicios para un marketplace, que incluye gestión de usuarios, catálogo de productos, órdenes de compra y procesamiento de pagos.
+El sistema está dividido en los siguientes microservicios:
 
+* 🔐 **Usuarios** → Registro, login, roles y estados
+* 📦 **Catálogo** → Gestión de productos
+* 🧾 **Órdenes** → Creación y gestión de compras
+* 💳 **Pagos** → Procesamiento de pagos
+* 💰 **Crédito** → Gestión de cupos de crédito
 
-
-## 📋 Requisitos Previos
-
-* **Node.js** (v16 o superior)
-* **MySQL** corriendo localmente
-* **Postman** (para pruebas de API)
+Cada microservicio tiene su propia base de datos.
 
 ---
 
-## 🚀 Paso a Paso para Levantar el Proyecto
+## 🗄️ Bases de Datos
 
-### 1. Configuración de Bases de Datos
-Crea las siguientes 4 bases de datos en tu MySQL:
-1. `marketplace_usuarios`
-2. `buyza_catalogo`
-3. `buyza_ordenes`
-4. `buyza_pagos`
+* `buyza_usuarios`
+* `buyza_catalogo`
+* `buyza_ordenes`
+* `buyza_pagos`
+* `buyza_credito`
 
-### 2. Configuración de Variables de Entorno (`.env`)
-En **cada carpeta** de microservicio, crea un archivo `.env` siguiendo esta estructura (ajusta los puertos según corresponda):
+---
 
-| Microservicio | Puerto | DB Name |
-| :--- | :--- | :--- |
-| **Usuarios** | `3001` | `marketplace_usuarios` |
-| **Catálogo** | `3002` | `buyza_catalogo` |
-| **Órdenes** | `3003` | `buyza_ordenes` |
-| **Pagos** | `3004` | `buyza_pagos` |
+## 👤 Roles de Usuario
 
-> **Importante:** El `JWT_SECRET` debe ser el mismo en los 4 archivos `.env`.
+### 🛍️ Comprador
 
-### 3. Instalación y Ejecución
-Debes abrir **4 terminales diferentes** (una para cada microservicio) y ejecutar los siguientes comandos desde la raíz de cada carpeta:
+* Puede ver catálogo
+* Puede comprar productos
+* Puede pagar órdenes
+
+### 🏪 Vendedor
+
+* Puede publicar productos
+* Puede editar y desactivar productos
+* **Sus productos se aprueban automáticamente si su cuenta está activa**
+
+### 🛠️ Admin
+
+* Aprueba vendedores
+* Puede aprobar productos manualmente (aunque ya no es necesario normalmente)
+
+---
+
+## 🔐 Autenticación
+
+Se usa **JWT (JSON Web Token)**.
+
+### Características:
+
+* El token incluye:
+
+  * `id`
+  * `rol`
+* Se envía en cada request:
+
+```
+Authorization: Bearer <token>
+```
+
+### Expiración:
+
+* Configurada actualmente en:
+
+```
+7 días
+```
+
+### Manejo en frontend:
+
+* Si el token expira:
+
+```js
+if (res.status === 403) {
+    cerrarSesion();
+    window.location.href = 'login.html';
+}
+```
+
+---
+
+## 🔄 Flujo del Sistema
+
+### 1. Registro
+
+* Comprador → activo automáticamente
+* Vendedor → estado `pendiente`
+
+### 2. Aprobación
+
+* Admin cambia estado a `activo`
+
+### 3. Publicación de producto
+
+* Si vendedor está activo:
+  ✅ Producto se aprueba automáticamente
+* Si no:
+  ⏳ Queda pendiente
+
+### 4. Compra
+
+* Se crea orden
+* Se descuenta stock
+
+### 5. Pago
+
+* Se registran abonos
+* Cuando se completa:
+
+  * Orden pasa a `pagada`
+  * Se descuenta crédito
+
+---
+
+## 📡 Endpoints principales
+
+### Usuarios
+
+* `POST /api/usuarios/register`
+* `POST /api/usuarios/login`
+* `GET /api/usuarios/perfil`
+* `PUT /api/usuarios/:id/estado`
+
+---
+
+### Catálogo
+
+* `GET /api/catalogo`
+* `GET /api/catalogo/:id`
+* `POST /api/catalogo` (vendedor)
+* `PUT /api/catalogo/:id`
+* `PUT /api/catalogo/:id/desactivar`
+* `PUT /api/catalogo/:id/aprobar` (admin)
+
+---
+
+### Órdenes
+
+* `POST /api/ordenes`
+* `GET /api/ordenes/:id`
+* `PUT /api/ordenes/:id/estado`
+
+---
+
+### Pagos
+
+* `POST /api/pagos/procesar`
+* `GET /api/pagos/estado-cuenta/:id_orden`
+
+---
+
+### Crédito
+
+* `POST /api/credito/usar`
+* `GET /api/credito/:usuario_id`
+
+---
+
+## ⚙️ Tecnologías
+
+* Node.js
+* Express
+* MySQL
+* JWT
+* Axios
+* HTML + JS (Frontend simple)
+* Vagrant (entorno VM)
+
+---
+
+## 🚨 Problemas resueltos
+
+### ✔️ Error 404 + HTML en respuesta
+
+* Causado por rutas incorrectas → solucionado
+
+### ✔️ JWT expirado
+
+* Se aumentó expiración a `7d`
+* Manejo en frontend agregado
+
+### ✔️ Error `cantidad null`
+
+* Se corrigió envío desde frontend (`stock → cantidad`)
+
+### ✔️ Productos no visibles
+
+* Se eliminó aprobación manual innecesaria
+* Ahora depende del estado del vendedor
+
+### ✔️ Error de módulos
+
+* Nombres inconsistentes (`productosController → catalogoController`)
+
+---
+
+## 🚀 Mejoras futuras
+
+* Refresh tokens (mejor que tokens largos)
+* Subida real de imágenes (no URL)
+* Panel admin UI
+* Logs centralizados
+* Dockerización
+
+---
+
+## ▶️ Ejecución
+
+Cada microservicio:
 
 ```bash
-# En cada una de las 4 carpetas:
 npm install
 node src/index.js
 ```
 
 ---
 
-## 🛠️ Flujo de Prueba (Postman)
+## 📌 Notas importantes
 
-Sigue este orden exacto para probar el sistema completo:
+* Cada servicio corre en un puerto distinto:
 
-1.  **Registro/Login (Puerto 3001):** Crea un usuario y haz login para obtener el `token`.
-2.  **Aprobación:** (Manual en DB) Cambia el estado del usuario a `aprobado`.
-3.  **Crear Producto (Puerto 3002):** Envía un `POST` con el Token para añadir un producto.
-4.  **Aprobación Producto:** (Manual en DB) Cambia el estado del producto a `1`.
-5.  **Crear Orden (Puerto 3003):** Envía un `POST` con el `id_producto` y el Token.
-6.  **Pagar Orden (Puerto 3004):** Envía el `id_orden` y el monto exacto para liquidar la deuda.
+  * Usuarios → 3001
+  * Catálogo → 3002
+  * Órdenes → 3003
+  * Pagos → 3004
+  * Crédito → 3005
+
+* Comunicación interna por IP:
+
+```
+192.168.100.X
+```
 
 ---
 
-## 📂 Estructura del Repositorio
+Si quieres, en el siguiente paso te puedo dejar el README aún más pro (nivel presentación final) con:
 
-* `/microservicio-usuarios`: Autenticación y JWT.
-* `/microservicio-catalogo`: Gestión de productos y stock.
-* `/microservicio-ordenes`: Lógica de compra y comunicación inter-servicios.
-* `/microservicio-pagos`: Procesamiento de transacciones y cierre de órdenes.
+* diagramas de arquitectura
+* flujo visual tipo UML
+* y narrativa para sustentar el proyecto 🔥
