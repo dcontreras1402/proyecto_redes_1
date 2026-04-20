@@ -12,7 +12,6 @@ app.use(morgan('dev'));
 
 // Rutas
 app.use('/api/usuarios', require('./routes/usuarioRoutes'));
-app.use('/api/credito', require('./routes/creditoRoutes')); 
 
 app.get('/', (req, res) => res.json({ mensaje: 'Microservicio de Usuarios activo' }));
 
