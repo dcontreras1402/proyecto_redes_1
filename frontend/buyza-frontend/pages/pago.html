@@ -42,21 +42,28 @@
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script>
+  // Obtiene el id de la orden de la URL (proviene del microservicio de Órdenes)
   const urlParams = new URLSearchParams(window.location.search);
   const orderId = urlParams.get('id');
   const user = getUsuario();
   let montoPendiente = 0;
 
+  // Seguridad: Si no hay usuario o id de orden, redirige al catálogo
   if (!user || !orderId) window.location.href = 'catalogo.html';
 
+  // Consulta al microservicio de Pagos (Puerto 3004) el estado financiero de la orden
   async function cargarEstadoCuenta() {
     const data = await pagos.get(`/estado-cuenta/${orderId}`);
     if (data && !data.error) {
+      // Guarda el saldo restante para procesar el pago exacto
       montoPendiente = data.saldo_restante;
       document.getElementById('orderIdDisplay').textContent = `Orden #${orderId}`;
       document.getElementById('totalDisplay').textContent = formatPeso(montoPendiente);
+
+      // Valida si la orden ya fue liquidada en el microservicio
       document.getElementById('infoDeuda').textContent = data.estado_pago === 'liquidada' ? 'Esta orden ya está pagada' : `Total de la orden: ${formatPeso(data.monto_total_orden)}`;
       
+      // Si ya está pagada, oculta los controles de pago
       if(data.estado_pago === 'liquidada') {
         document.getElementById('btnPago').style.display = 'none';
         document.getElementById('metodo_pago').parentElement.style.display = 'none';
@@ -66,18 +73,21 @@
     }
   }
 
+  // Envía la transacción al microservicio de Pagos (Puerto 3004)
   async function procesarPago() {
     const btn = document.getElementById('btnPago');
     const metodo = document.getElementById('metodo_pago').value;
     btn.disabled = true;
     btn.textContent = 'Procesando...';
     
+    // El microservicio de pagos validará el monto y actualizará el estado de la orden a 'pagada' si corresponde
     const res = await pagos.post('/procesar', { 
       id_orden: orderId, 
       metodo_pago: metodo, 
       monto: montoPendiente 
     });
     
+    // Si el microservicio devuelve un ID de transacción, el pago fue exitoso
     if (res.transaccion) {
       document.getElementById('contenido-pago').innerHTML = `
         <div style="color:var(--success); font-size:4rem; margin-bottom:1rem">✓</div>
@@ -89,12 +99,14 @@
         <a href="catalogo.html" class="btn btn-primary">Volver al catálogo</a>
       `;
     } else {
+      // Maneja errores de validación del microservicio (ej: saldo insuficiente o error de red)
       mostrarAlerta('alerta', res.error || 'Error en el pago', 'error');
       btn.disabled = false;
       btn.textContent = 'Pagar ahora';
     }
   }
 
+  // Inicializa la carga de datos al abrir la página
   cargarEstadoCuenta();
 </script>
 </body>

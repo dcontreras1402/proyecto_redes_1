@@ -78,15 +78,23 @@
     }
   }
 
+  // Función que se dispara al hacer clic en el botón "Comprar" de un producto
   async function comprar(id_producto) {
     try {
+      // 1. Llamada al Microservicio de Órdenes (Puerto 3003)
+      // Se envía el id_producto; el microservicio valida stock y precio
       const res = await ordenes.post('/crear', { id_producto });
       if(res && res.id_orden) {
+        // Si la orden se creó con éxito (estado 'pendiente')
         mostrarAlerta('alerta', 'Orden creada correctamente', 'success');
+
+        // 2. Redirección automática al flujo de Pagos
+        // Pasamos el ID de la orden recién creada por la URL
         setTimeout(() => {
           window.location.href = `pago.html?id=${res.id_orden}`;
         }, 1200);
       } else {
+        // Manejo de errores (ej: producto sin stock)
         mostrarAlerta('alerta', res?.error || 'Error al procesar compra', 'error');
       }
     } catch (err) {
