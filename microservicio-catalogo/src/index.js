@@ -13,7 +13,7 @@ app.use(express.json());
 // Es recomendable usar un prefijo para mantener consistencia con api.js
 app.use('/api/catalogo', catalogoController);
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3003;
 
 // Agregamos '0.0.0.0' para permitir conexiones desde la IP de la VM (red privada)
 app.listen(PORT, '0.0.0.0', () => {
