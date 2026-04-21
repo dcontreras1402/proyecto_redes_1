@@ -12,7 +12,7 @@ router.post('/procesar', verificarToken, async (req, res) => {
         const montoAbono = parseFloat(monto);
 
         // Obtiene informacion de la orden desde el microservicio de Ordenes
-        const respuestaOrden = await axios.get(`http://192.168.100.2:3003/api/ordenes/info/${id_orden}`);
+        const respuestaOrden = await axios.get(`http://192.168.100.2:3004/api/ordenes/info/${id_orden}`);
         const orden = respuestaOrden.data;
         const totalOrden = parseFloat(orden.total);
 
@@ -46,14 +46,14 @@ router.post('/procesar', verificarToken, async (req, res) => {
         if (Math.abs(totalAcumulado - totalOrden) < 0.01) {
             try {
                 // Notifica al microservicio de Usuarios para descontar del cupo de credito
-                await axios.post('http://192.168.100.2:3001/api/credito/usar', {
+                await axios.post('http://192.168.100.2:3002/api/credito/usar', {
                     usuario_id: id_usuario,
                     monto: totalOrden,
                     cuotas: 1
                 });
 
                 // Actualiza el estado de la orden en el microservicio correspondiente
-                await axios.put(`http://192.168.100.2:3003/api/ordenes/${id_orden}/estado`, { estado: 'pagada' });
+                await axios.put(`http://192.168.100.2:3004/api/ordenes/${id_orden}/estado`, { estado: 'pagada' });
                 mensajeCierre = "Pago completado. Orden liquidada";
                 estadoFinal = "pagada";
             } catch (error) {
@@ -88,7 +88,7 @@ router.get('/estado-cuenta/:id_orden', verificarToken, async (req, res) => {
     try {
         const { id_orden } = req.params;
         // Consulta costo total en Ordenes
-        const respuestaOrden = await axios.get(`http://192.168.100.2:3003/api/ordenes/info/${id_orden}`);
+        const respuestaOrden = await axios.get(`http://192.168.100.2:3004/api/ordenes/info/${id_orden}`);
         const totalOrden = parseFloat(respuestaOrden.data.total);
         
         // Obtiene lista de transacciones desde el modelo
