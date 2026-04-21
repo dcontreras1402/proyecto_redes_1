@@ -16,7 +16,7 @@ router.post('/crear', verificarToken, async (req, res) => {
 
         try {
             // Consulta info del producto al microservicio de Catálogo
-            const resp = await axios.get(`http://192.168.100.2:3002/api/catalogo/${id_producto}`);
+            const resp = await axios.get(`http://192.168.100.2:3003/api/catalogo/${id_producto}`);
             const prodInfo = resp.data;
 
             // Valida disponibilidad en stock
@@ -63,7 +63,7 @@ router.post('/', verificarToken, async (req, res) => {
         // Itera para validar stock y calcular total de todos los productos
         for (const item of productos) {
             try {
-                const resp = await axios.get(`http://192.168.100.2:3002/api/catalogo/${item.id_producto}`);
+                const resp = await axios.get(`http://192.168.100.2:3003/api/catalogo/${item.id_producto}`);
                 const prodInfo = resp.data;
 
                 if (prodInfo.cantidad < item.cantidad) {
@@ -83,7 +83,7 @@ router.post('/', verificarToken, async (req, res) => {
 
         try {
             // Solicita el descuento del saldo al microservicio de Usuarios/Crédito
-            await axios.post('http://192.168.100.2:3001/api/credito/usar', {
+            await axios.post('http://192.168.100.2:3002/api/credito/usar', {
                 usuario_id: id_comprador,
                 monto: totalCalculado,
                 cuotas: cuotas || 1
@@ -98,7 +98,7 @@ router.post('/', verificarToken, async (req, res) => {
 
         // Actualiza el stock restando lo comprado en el microservicio de Catálogo
         for (const item of productosValidados) {
-            await axios.put(`http://192.168.100.2:3002/api/catalogo/${item.id_producto}/reducir-stock`, {
+            await axios.put(`http://192.168.100.2:3003/api/catalogo/${item.id_producto}/reducir-stock`, {
                 cantidad_comprada: item.cantidad
             });
         }
