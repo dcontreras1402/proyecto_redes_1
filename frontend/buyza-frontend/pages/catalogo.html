@@ -81,7 +81,7 @@
   // Función que se dispara al hacer clic en el botón "Comprar" de un producto
   async function comprar(id_producto) {
     try {
-      // 1. Llamada al Microservicio de Órdenes (Puerto 3003)
+      // 1. Llamada al Microservicio de Órdenes (Puerto 3004)
       // Se envía el id_producto; el microservicio valida stock y precio
       const res = await ordenes.post('/crear', { id_producto });
       if(res && res.id_orden) {

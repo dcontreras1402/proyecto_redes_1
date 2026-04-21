@@ -12,7 +12,7 @@
     .credito-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.4rem; }
     .credito-header h1 span { background: linear-gradient(135deg, var(--primary), var(--secondary)); background-clip: text; -webkit-text-fill-color: transparent; }
     .credito-header p { color: var(--gray-600); font-size: 0.95rem; }
-    .cupo-card { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius: var(--radius); padding: 2rem; color: white; margin-bottom: 1.5rem; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; animation: fadeUp 0.5s ease forwards; }
+    .cupo-card { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius: var(--radius); padding: 2rem; color: white; margin-bottom: 1.5rem; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
     .cupo-card::before { content: ''; position: absolute; width: 300px; height: 300px; background: rgba(255,255,255,0.05); border-radius: 50%; top: -100px; right: -80px; }
     .cupo-card::after { content: ''; position: absolute; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%; bottom: -60px; left: -40px; }
     .cupo-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; position: relative; z-index: 1; }
@@ -36,7 +36,6 @@
     .cuota-item { border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; transition: var(--transition); }
     .cuota-item:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
     .cuota-item:last-child { margin-bottom: 0; }
-    .cuota-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
     .cuota-monto { font-size: 1.05rem; font-weight: 700; }
     .cuota-progress { height: 5px; background: var(--gray-200); border-radius: 50px; overflow: hidden; margin-bottom: 0.5rem; }
     .cuota-progress-fill { height: 100%; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50px; }
@@ -61,7 +60,7 @@
     .modal { background: white; border-radius: var(--radius); padding: 2rem; width: 100%; max-width: 420px; animation: fadeUp 0.3s ease forwards; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .modal-header h3 { font-size: 1.2rem; font-weight: 700; }
-    .modal-close { background: var(--gray-100); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+    .modal-close { background: var(--gray-100); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
     .modal-close:hover { background: var(--gray-200); }
     .resumen-cuotas { background: var(--gray-100); border-radius: var(--radius-sm); padding: 1rem; margin: 1rem 0; }
     .resumen-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 0.4rem; }
@@ -206,10 +205,10 @@
 
   async function cargarCredito() {
     try {
-      const data = await credito.get('');
+      const data = await creditos.get('');
       if (data.error) throw new Error(data.error);
-      const cupoDisp = parseFloat(data.cupo_disponible);  // ✅ CONVERTIR A NÚMERO
-      const cupoTotal = parseFloat(data.cupo_total);      // ✅ CONVERTIR A NÚMERO
+      const cupoDisp = parseFloat(data.cupo_disponible);
+      const cupoTotal = parseFloat(data.cupo_total);
       const usado = cupoTotal - cupoDisp;
       const pct = cupoTotal > 0 ? (usado / cupoTotal * 100) : 0;
       document.getElementById('cupoDisponible').textContent = formatPeso(cupoDisp);
@@ -217,7 +216,7 @@
       document.getElementById('cupoTotalLabel').textContent = formatPeso(cupoTotal);
       document.getElementById('estadoCupo').textContent = pct < 50 ? 'Cupo disponible' : pct < 90 ? 'Cupo parcial' : 'Cupo casi lleno';
       document.getElementById('comprasCompletadas').textContent = data.compras_completadas;
-      document.getElementById('comprasParaAumento').textContent = data.compras_para_siguiente_aumento;
+      document.getElementById('comprasParaAumento').textContent = data.compras_para_aumento;
       document.getElementById('statCupoTotal').textContent = formatPeso(cupoTotal);
       document.getElementById('statCupoUsado').textContent = formatPeso(usado);
       document.getElementById('statCompras').textContent = data.compras_completadas;
@@ -227,12 +226,12 @@
 
   async function cargarCuotas() {
     try {
-      const cuotas = await credito.get('/cuotas');
+      const cuotas = await creditos.get('/cuotas');
       document.getElementById('statCuotasPendientes').textContent = cuotas.length;
       if (!cuotas.length) return;
       document.getElementById('listaCuotas').innerHTML = cuotas.map(c => {
         const pct = (c.cuotas_pagadas / c.cuotas_totales * 100).toFixed(0);
-        const montoPorCuota = parseFloat(c.monto_por_cuota);  // ✅ CONVERTIR A NÚMERO
+        const montoPorCuota = parseFloat(c.monto_por_cuota);
         return `<div class="cuota-item">
           <div class="cuota-top">
             <span class="cuota-monto">${formatPeso(parseFloat(c.monto_total))}</span>
@@ -255,12 +254,12 @@
 
   async function cargarHistorial() {
     try {
-      const movs = await credito.get('/historial');
+      const movs = await creditos.get('/historial');
       if (!movs || !movs.length) return;
-      const iconos = { compra: '🛒', pago: '✅', aumento_cupo: '🎉' };
+      const iconos = { compra: '🛒', pago: '✅', aumento_cupo: '🎉', ajuste_admin: '⚙️' };
       document.getElementById('listaHistorial').innerHTML = movs.slice(0, 8).map(m => `
         <div class="historial-item">
-          <div class="historial-icon ${m.tipo === 'aumento_cupo' ? 'aumento' : m.tipo}">${iconos[m.tipo]}</div>
+          <div class="historial-icon ${m.tipo === 'aumento_cupo' ? 'aumento' : m.tipo}">${iconos[m.tipo] || '📊'}</div>
           <div class="historial-desc">
             <strong>${m.descripcion || m.tipo}</strong>
             <span>${new Date(m.fecha).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })}</span>
@@ -274,10 +273,10 @@
 
   async function pagarCuota(id) {
     try {
-      const data = await credito.post(`/pagar/${id}`, {});
+      const data = await creditos.post(`/pagar/${id}`, {});
       if (data.error) throw new Error(data.error);
       let msg = data.mensaje;
-      if (data.aumento_cupo) msg += ` 🎉 ${data.aumento_cupo}`;
+      if (data.mensaje_extra) msg += ` 🎉 ${data.mensaje_extra}`;
       mostrarAlerta('alertGlobal', msg, 'success');
       cargarCredito(); cargarCuotas(); cargarHistorial();
     } catch (err) { mostrarAlerta('alertGlobal', err.message, 'error'); }
@@ -286,8 +285,8 @@
   let cupoActual = 0;
 
   async function abrirModalCredito() {
-    const data = await credito.get('');
-    cupoActual = parseFloat(data.cupo_disponible);  // ✅ CONVERTIR A NÚMERO
+    const data = await creditos.get('');
+    cupoActual = parseFloat(data.cupo_disponible);
     document.getElementById('montoCredito').value = '';
     document.getElementById('resumenCuotas').style.display = 'none';
     document.getElementById('modalCredito').classList.add('show');
@@ -302,7 +301,7 @@
     if (!monto || monto <= 0) { resumen.style.display = 'none'; return; }
     document.getElementById('resumenTotal').textContent = formatPeso(monto);
     document.getElementById('resumenCuotas2').textContent = cuotas;
-    const valorCuota = parseFloat((monto / cuotas).toFixed(0));  // ✅ CONVERTIR A NÚMERO
+    const valorCuota = parseFloat((monto / cuotas).toFixed(0));
     document.getElementById('resumenValorCuota').textContent = formatPeso(valorCuota);
     const restante = cupoActual - monto;
     document.getElementById('resumenCupoRestante').textContent = restante >= 0 ? formatPeso(restante) : '⚠️ Cupo insuficiente';
@@ -319,9 +318,9 @@
     btn.innerHTML = '<span class="spinner"></span> Procesando...';
     try {
       const payload = JSON.parse(atob(localStorage.getItem('token').split('.')[1]));
-      const data = await credito.post('/usar', { usuario_id: payload.id, monto, cuotas });
+      const data = await creditos.post('/usar', { usuario_id: payload.id, monto, cuotas });
       if (data.error) throw new Error(data.error);
-      const montoPorCuota = parseFloat(data.monto_por_cuota);  // ✅ CONVERTIR A NÚMERO
+      const montoPorCuota = parseFloat(data.monto_por_cuota);
       cerrarModalCredito();
       mostrarAlerta('alertGlobal', `Credito aprobado: ${formatPeso(monto)} en ${cuotas} cuota(s) de ${formatPeso(montoPorCuota)}`, 'success');
       cargarCredito(); cargarCuotas(); cargarHistorial();

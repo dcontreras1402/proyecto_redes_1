@@ -68,6 +68,12 @@ const usuarios = {
   put:  (ep, data) => api.put(ep, data, CONFIG.USUARIOS_URL),
 };
 
+const creditos = {
+  get:  (ep = '')  => api.get(ep, CONFIG.CREDITOS_URL),
+  post: (ep, data) => api.post(ep, data, CONFIG.CREDITOS_URL),
+  put:  (ep, data) => api.put(ep, data, CONFIG.CREDITOS_URL),
+};
+
 const catalogo = {
   get:    (ep = '')  => api.get(ep, CONFIG.CATALOGO_URL),
   post:   (ep, data) => api.post(ep, data, CONFIG.CATALOGO_URL),
@@ -84,11 +90,6 @@ const ordenes = {
 const pagos = {
   get:  (ep = '')  => api.get(ep, CONFIG.PAGOS_URL),
   post: (ep, data) => api.post(ep, data, CONFIG.PAGOS_URL),
-};
-
-const credito = {
-  get:  (ep = '')  => api.get(ep, CONFIG.CREDITO_URL),
-  post: (ep, data) => api.post(ep, data, CONFIG.CREDITO_URL),
 };
 
 // ==================== UTILS ====================

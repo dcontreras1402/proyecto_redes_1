@@ -3,13 +3,17 @@ const CONFIG = {
 
   PORTS: {
     USUARIOS: 3001,
-    CATALOGO: 3002,
-    ORDENES:  3003,
-    PAGOS:    3004,
+    CREDITOS: 3002,
+    CATALOGO: 3003,
+    ORDENES:  3004,
+    PAGOS:    3005,
   },
 
   get USUARIOS_URL() {
     return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/usuarios`;
+  },
+  get CREDITOS_URL() {
+    return `${this.API_BASE_URL}:${this.PORTS.CREDITOS}/api/creditos`;
   },
   get CATALOGO_URL() {
     return `${this.API_BASE_URL}:${this.PORTS.CATALOGO}/api/catalogo`;
@@ -19,8 +23,5 @@ const CONFIG = {
   },
   get PAGOS_URL() {
     return `${this.API_BASE_URL}:${this.PORTS.PAGOS}/api/pagos`;
-  },
-  get CREDITO_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/credito`;
   },
 };
