@@ -10,18 +10,18 @@ const CONFIG = {
   },
 
   get USUARIOS_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/usuarios`;
+    return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/usuarios/`;
   },
   get CREDITOS_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.CREDITOS}/api/creditos`;
+    return `${this.API_BASE_URL}:${this.PORTS.CREDITOS}/api/credito/`;
   },
   get CATALOGO_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.CATALOGO}/api/catalogo`;
+    return `${this.API_BASE_URL}:${this.PORTS.CATALOGO}/api/catalogo/`;
   },
   get ORDENES_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.ORDENES}/api/ordenes`;
+    return `${this.API_BASE_URL}:${this.PORTS.ORDENES}/api/ordenes/`;
   },
   get PAGOS_URL() {
-    return `${this.API_BASE_URL}:${this.PORTS.PAGOS}/api/pagos`;
+    return `${this.API_BASE_URL}:${this.PORTS.PAGOS}/api/pagos/`;
   },
 };

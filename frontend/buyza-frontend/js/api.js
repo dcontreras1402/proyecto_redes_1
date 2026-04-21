@@ -1,66 +1,49 @@
 const api = {
   request: async function(method, endpoint, data, base) {
+    if (!base) {
+      console.error("Error crítico: Base URL no definida para", endpoint);
+      throw new Error("Base URL es requerida");
+    }
     const token = localStorage.getItem('token');
-
     const options = {
       method,
       headers: { 'Content-Type': 'application/json' }
     };
-
-    if (token) {
-      options.headers['Authorization'] = `Bearer ${token}`;
-    }
-
+    if (token) options.headers['Authorization'] = `Bearer ${token}`;
     if (data) options.body = JSON.stringify(data);
-
+    const cleanBase = base.endsWith('/') ? base : `${base}/`;
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const url = `${cleanBase}${cleanEndpoint}`;
     try {
-      const res = await fetch(`${base}${endpoint}`, options);
-
+      const res = await fetch(url, options);
       let result;
-
-      // Manejo seguro de respuesta (JSON o HTML)
       const contentType = res.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         result = await res.json();
       } else {
         const text = await res.text();
-        throw {
-          error: 'Respuesta no válida del servidor',
-          detalle: text,
-          status: res.status
-        };
+        throw { error: 'Respuesta no válida', detalle: text, status: res.status };
       }
-
-      // Manejo de errores HTTP
       if (!res.ok) {
-
-        // TOKEN EXPIRADO O INVÁLIDO
-        if (res.status === 403) {
+        if (res.status === 401 || res.status === 403) {
           cerrarSesion();
-          window.location.href = 'login.html';
           return;
         }
-
         const err = result || {};
         err.status = res.status;
         throw err;
       }
-
       return result;
-
     } catch (err) {
-      console.error(`Error en ${method} ${endpoint}:`, err);
+      console.error(`Error en ${method} ${url}:`, err);
       throw err;
     }
   },
-
-  post(ep, data, base)   { return this.request('POST',   ep, data, base); },
-  get(ep, base)          { return this.request('GET',    ep, null, base); },
-  put(ep, data, base)    { return this.request('PUT',    ep, data, base); },
-  delete(ep, base)       { return this.request('DELETE', ep, null, base); }
+  post(ep, data, base)   { return this.request('POST', ep, data, base); },
+  get(ep, base)           { return this.request('GET', ep, null, base); },
+  put(ep, data, base)    { return this.request('PUT', ep, data, base); },
+  delete(ep, base)        { return this.request('DELETE', ep, null, base); }
 };
-
-// ==================== SERVICIOS ====================
 
 const usuarios = {
   post: (ep, data) => api.post(ep, data, CONFIG.USUARIOS_URL),
@@ -69,9 +52,9 @@ const usuarios = {
 };
 
 const creditos = {
-  get:  (ep = '')  => api.get(ep, CONFIG.CREDITOS_URL),
-  post: (ep, data) => api.post(ep, data, CONFIG.CREDITOS_URL),
-  put:  (ep, data) => api.put(ep, data, CONFIG.CREDITOS_URL),
+  get:  (ep = '')  => api.get(ep, CONFIG.CREDITO_URL),
+  post: (ep, data) => api.post(ep, data, CONFIG.CREDITO_URL),
+  put:  (ep, data) => api.put(ep, data, CONFIG.CREDITO_URL),
 };
 
 const catalogo = {
@@ -91,8 +74,6 @@ const pagos = {
   get:  (ep = '')  => api.get(ep, CONFIG.PAGOS_URL),
   post: (ep, data) => api.post(ep, data, CONFIG.PAGOS_URL),
 };
-
-// ==================== UTILS ====================
 
 function getUsuario() {
   const data = localStorage.getItem('usuario');
