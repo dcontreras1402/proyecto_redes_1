@@ -1,9 +1,8 @@
 const db = require('../config/db');
 
-// Registrar movimiento de crédito
 const registrarMovimiento = async (usuarioId, tipo, monto, cupoBefore, cupoAfter, descripcion) => {
   try {
-    await db.execute(
+    await db.query(
       `INSERT INTO movimientos_credito (usuario_id, tipo, monto, cupo_antes, cupo_despues, descripcion, fecha)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
       [usuarioId, tipo, monto, cupoBefore, cupoAfter, descripcion]
@@ -13,16 +12,15 @@ const registrarMovimiento = async (usuarioId, tipo, monto, cupoBefore, cupoAfter
   }
 };
 
-// Obtener historial de movimientos
 const obtenerHistorial = async (usuarioId, limite = 20) => {
   try {
-    const [rows] = await db.execute(
+    const [rows] = await db.query(
       `SELECT id, tipo, monto, cupo_antes, cupo_despues, descripcion, fecha
        FROM movimientos_credito
        WHERE usuario_id = ?
        ORDER BY fecha DESC
        LIMIT ?`,
-      [usuarioId, limite]
+      [usuarioId, Number(limite)]
     );
     return rows;
   } catch (err) {
