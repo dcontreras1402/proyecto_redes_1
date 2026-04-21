@@ -20,8 +20,8 @@ app.use(express.json());
 // Define el prefijo de la ruta para todas las funciones de este microservicio
 app.use('/api/ordenes', ordenesController);
 
-// Establece el puerto desde el .env o usa el 3004 por defecto
-const PORT = process.env.PORT || 3004;
+// Establece el puerto desde el .env o usa el 3003 por defecto
+const PORT = process.env.PORT || 3003;
 
 // Inicia el servidor escuchando en 0.0.0.0 para que sea accesible desde otros dispositivos en la red
 app.listen(PORT, '0.0.0.0', () => {
