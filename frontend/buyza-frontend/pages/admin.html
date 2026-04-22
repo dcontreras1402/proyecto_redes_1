@@ -519,7 +519,7 @@
       '<tr><td colspan="8" style="text-align:center; color:var(--gray-400); padding:2rem">Cargando creditos...</td></tr>';
 
     const resultados = await Promise.allSettled(
-      compradores.map(u => api.get(`/usuario/${u.id}`, 'http://192.168.100.2:3002/api/credito'))
+      compradores.map(u => api.get(`/usuario/${u.id}`, 'http://192.168.100.2:3005/api/credito'))
     );
 
     const filas = compradores.map((u, i) => {
@@ -580,7 +580,7 @@
     const btn = document.getElementById('btnConfirmarAjuste');
     btn.disabled = true; btn.textContent = 'Guardando...';
     try {
-      const res = await api.put(`/usuario/${usuarioAjusteId}/ajustar`, { cupo_total }, 'http://192.168.100.2:3002/api/credito');
+      const res = await api.put(`/usuario/${usuarioAjusteId}/ajustar`, { cupo_total }, 'http://192.168.100.2:3005/api/credito');
       if (res.error) throw new Error(res.error);
       cerrarModal();
       mostrarAlerta('alertaCredito', res.mensaje || 'Cupo ajustado correctamente', 'success');
