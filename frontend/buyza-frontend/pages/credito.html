@@ -27,7 +27,7 @@
     .cupo-stat-item { font-size: 0.9rem; opacity: 0.9; line-height: 1.4; }
     .cupo-stat-item strong { display: block; font-size: 1.4rem; font-weight: 800; opacity: 1; margin-bottom: 2px; }
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .stat-card { background: white; padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); }
+    .stat-card { background: white; padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; }
     .stat-label { font-size: 0.8rem; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.5rem; }
     .stat-value { font-size: 1.5rem; font-weight: 700; }
     .stat-value.purple { color: var(--primary); }
@@ -45,6 +45,7 @@
     .historial-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
     .historial-icon.compra { background: #fee2e2; color: #b91c1c; }
     .historial-icon.pago { background: #dcfce7; color: #15803d; }
+    .historial-icon.aumento { background: #e0e7ff; color: #4338ca; }
     .historial-desc { flex: 1; }
     .historial-desc strong { display: block; font-size: 0.95rem; font-weight: 700; color: var(--dark); }
     .historial-monto { font-weight: 800; font-size: 1rem; text-align: right; }
@@ -54,6 +55,9 @@
     .resumen-cuotas { background: #f8fafc; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 1.25rem; margin: 1.5rem 0; }
     .resumen-row { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.5rem; }
     .resumen-row.total { border-top: 1px dashed var(--gray-300); padding-top: 0.5rem; font-weight: 700; }
+    .btn-liquidar { margin-top: 10px; padding: 6px 12px; font-size: 0.75rem; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; display: none; font-weight: 700; transition: background 0.2s; }
+    .btn-liquidar:hover { background: #991b1b; }
+    .empty-state { padding: 2rem; text-align: center; color: var(--gray-400); font-style: italic; }
   </style>
 </head>
 <body>
@@ -108,8 +112,11 @@
         <div class="stat-value purple" id="statCupoTotal">$0</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Deuda Actual</div>
-        <div class="stat-value red" id="statCupoUsado">$0</div>
+        <div>
+          <div class="stat-label">Deuda Actual</div>
+          <div class="stat-value red" id="statCupoUsado">$0</div>
+        </div>
+        <button class="btn-liquidar" id="btnLiquidarTodo" onclick="liquidarDeudaTotal()">Liquidar todo</button>
       </div>
       <div class="stat-card">
         <div class="stat-label">Cuotas Pendientes</div>
@@ -141,27 +148,27 @@
 <div class="modal-overlay" id="modalCredito">
   <div class="modal">
     <div class="modal-header">
-      <h3>Solicitar Crédito</h3>
+      <h3>Simular Compra</h3>
       <button class="modal-close" onclick="cerrarModalCredito()">✕</button>
     </div>
     <div id="alertModal" class="alert"></div>
     <div class="form-group">
-      <label class="form-label">Monto</label>
-      <input type="number" class="form-control" id="montoCredito" oninput="calcularCuotas()">
+      <label class="form-label">Monto de la compra</label>
+      <input type="number" class="form-control" id="montoCredito" oninput="calcularCuotas()" placeholder="Ej: 50000">
     </div>
     <div class="form-group">
-      <label class="form-label">Plazo</label>
+      <label class="form-label">Diferir a</label>
       <select class="form-control" id="numCuotas" onchange="calcularCuotas()">
-        <option value="1">1 Mes</option>
+        <option value="1">1 Mes (Sin interés)</option>
         <option value="3">3 Meses</option>
         <option value="6">6 Meses</option>
       </select>
     </div>
     <div class="resumen-cuotas" id="resumenCuotas" style="display:none">
-      <div class="resumen-row"><span>Valor cuota</span><span id="resumenValorCuota"></span></div>
-      <div class="resumen-row total"><span>Restante</span><span id="resumenCupoRestante"></span></div>
+      <div class="resumen-row"><span>Valor de la cuota</span><span id="resumenValorCuota"></span></div>
+      <div class="resumen-row total"><span>Cupo tras compra</span><span id="resumenCupoRestante"></span></div>
     </div>
-    <button class="btn btn-primary btn-full" onclick="confirmarCredito()">Confirmar Solicitud</button>
+    <button class="btn btn-primary btn-full" onclick="confirmarCredito()">Confirmar Compra</button>
   </div>
 </div>
 
@@ -177,7 +184,7 @@
       const data = await creditos.get('mio');
       cupoActual = parseFloat(data.cupo_disponible);
       const total = parseFloat(data.cupo_total);
-      const usado = total - cupoActual;
+      const usado = Math.max(0, total - cupoActual);
       const pct = total > 0 ? (usado / total * 100) : 0;
 
       document.getElementById('cupoDisponible').textContent = formatPeso(cupoActual);
@@ -189,6 +196,8 @@
       document.getElementById('statCupoTotal').textContent = formatPeso(total);
       document.getElementById('statCupoUsado').textContent = formatPeso(usado);
       
+      document.getElementById('btnLiquidarTodo').style.display = usado > 1 ? 'block' : 'none';
+
       setTimeout(() => { 
         document.getElementById('cupoProgressFill').style.width = pct + '%'; 
       }, 400);
@@ -199,49 +208,67 @@
     try {
       const cuotas = await creditos.get('cuotas');
       document.getElementById('statCuotasPendientes').textContent = cuotas.length;
-      document.getElementById('listaCuotas').innerHTML = cuotas.length ? cuotas.map(c => `
-        <div class="cuota-item">
-          <div class="cuota-top-row">
-            <span class="cuota-monto">${formatPeso(c.monto_total)}</span>
-            <span class="cuota-badge-status">${c.estado || 'Pendiente'}</span>
-          </div>
-          <div class="cuota-info">
-            <span>Avance: ${c.cuotas_pagadas} de ${c.cuotas_totales} cuotas</span>
-            <span>Mensualidad: <strong>${formatPeso(c.monto_por_cuota)}</strong></span>
-          </div>
-          <button class="btn btn-success btn-full" style="margin-top: 1rem;" onclick="pagarCuota(${c.id})">Pagar mensualidad</button>
-        </div>`).join('') : '<div class="empty-state">No tienes deudas pendientes.</div>';
+      
+      if (cuotas.length > 0) {
+        document.getElementById('listaCuotas').innerHTML = cuotas.map(c => `
+          <div class="cuota-item">
+            <div class="cuota-top-row">
+              <span class="cuota-monto">${formatPeso(c.monto_total)}</span>
+              <span class="cuota-badge-status">${c.estado.toUpperCase()}</span>
+            </div>
+            <div class="cuota-info">
+              <div>Avance: <strong>${c.cuotas_pagadas} de ${c.cuotas_totales}</strong> cuotas</div>
+              <div>Próximo pago: <strong>${formatPeso(c.monto_por_cuota)}</strong></div>
+            </div>
+            <button class="btn btn-success btn-full" style="margin-top: 1rem;" onclick="pagarCuota(${c.id})">Pagar mensualidad</button>
+          </div>`).join('');
+      } else {
+        document.getElementById('listaCuotas').innerHTML = '<div class="empty-state">No tienes deudas pendientes.</div>';
+      }
     } catch (err) { console.error(err); }
   }
 
   async function cargarHistorial() {
     try {
       const movs = await creditos.get('historial');
-      const iconos = { compra: '🛒', pago: '💰' };
+      const iconos = { compra: '🛒', pago: '💰', aumento_cupo: '📈' };
       document.getElementById('listaHistorial').innerHTML = movs.length ? movs.map(m => `
         <div class="historial-item">
-          <div class="historial-icon ${m.tipo === 'compra' ? 'compra' : 'pago'}">${iconos[m.tipo] || '📊'}</div>
+          <div class="historial-icon ${m.tipo === 'compra' ? 'compra' : (m.tipo === 'pago' ? 'pago' : 'aumento')}">${iconos[m.tipo] || '📊'}</div>
           <div class="historial-desc">
-            <strong>${m.descripcion || (m.tipo === 'compra' ? 'Uso de crédito' : 'Pago de cuota')}</strong>
+            <strong>${m.descripcion}</strong>
             <span>${new Date(m.fecha).toLocaleDateString()}</span>
           </div>
           <div class="historial-monto ${m.tipo === 'compra' ? 'red' : 'green'}">
             ${m.tipo === 'compra' ? '-' : '+'}${formatPeso(m.monto)}
           </div>
-        </div>`).join('') : '<div class="empty-state">Sin movimientos.</div>';
+        </div>`).join('') : '<div class="empty-state">Sin movimientos registrados.</div>';
     } catch (err) { console.error(err); }
   }
 
   async function pagarCuota(id) {
     try {
       await creditos.post(`pagar/${id}`, {});
-      mostrarAlerta('alertGlobal', 'Pago exitoso', 'success');
+      mostrarAlerta('alertGlobal', '¡Mensualidad pagada!', 'success');
       cargarTodo();
-    } catch (err) { mostrarAlerta('alertGlobal', 'Error al pagar', 'danger'); }
+    } catch (err) { mostrarAlerta('alertGlobal', 'Error al procesar pago', 'danger'); }
+  }
+
+  async function liquidarDeudaTotal() {
+    if (!confirm('¿Estás seguro de que deseas liquidar el total de tu deuda actual?')) return;
+    try {
+      await creditos.post('liquidar', {});
+      mostrarAlerta('alertGlobal', '¡Deuda liquidada con éxito!', 'success');
+      cargarTodo();
+    } catch (err) { mostrarAlerta('alertGlobal', 'Error al liquidar deuda', 'danger'); }
   }
 
   function abrirModalCredito() { document.getElementById('modalCredito').classList.add('show'); }
-  function cerrarModalCredito() { document.getElementById('modalCredito').classList.remove('show'); }
+  function cerrarModalCredito() { 
+    document.getElementById('modalCredito').classList.remove('show');
+    document.getElementById('montoCredito').value = '';
+    document.getElementById('resumenCuotas').style.display = 'none';
+  }
 
   function calcularCuotas() {
     const monto = parseFloat(document.getElementById('montoCredito').value);
@@ -256,16 +283,21 @@
   async function confirmarCredito() {
     const monto = parseFloat(document.getElementById('montoCredito').value);
     const cuotas = parseInt(document.getElementById('numCuotas').value);
-    if (!monto || monto > cupoActual) return mostrarAlerta('alertModal', 'Cupo insuficiente', 'danger');
+    if (!monto || monto > cupoActual) return mostrarAlerta('alertModal', 'Monto inválido o cupo insuficiente', 'danger');
     try {
-      await creditos.post('usar', { usuario_id: user.id, monto, cuotas });
+      await creditos.post('usar', { usuario_id: user.id, monto, cuotas, compra_id: Math.floor(Math.random() * 100000) });
       cerrarModalCredito();
-      mostrarAlerta('alertGlobal', 'Crédito aprobado', 'success');
+      mostrarAlerta('alertGlobal', 'Compra aprobada y registrada', 'success');
       cargarTodo();
-    } catch (err) { mostrarAlerta('alertModal', err.message, 'danger'); }
+    } catch (err) { mostrarAlerta('alertModal', err.message || 'Error en la solicitud', 'danger'); }
   }
 
-  function cargarTodo() { cargarCredito(); cargarCuotas(); cargarHistorial(); }
+  function cargarTodo() { 
+    cargarCredito(); 
+    cargarCuotas(); 
+    cargarHistorial(); 
+  }
+
   document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
   window.onload = cargarTodo;
 </script>
