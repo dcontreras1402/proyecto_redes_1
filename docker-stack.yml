@@ -9,6 +9,8 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      - buyza-net
     deploy:
       placement:
         constraints:
@@ -23,6 +25,8 @@ services:
       - DB_USER=root
       - DB_PASSWORD=
       - DB_NAME=marketplace_usuarios
+    networks:
+      - buyza-net
     deploy:
       replicas: 2
       placement:
@@ -38,6 +42,8 @@ services:
       - DB_USER=root
       - DB_PASSWORD=
       - DB_NAME=buyza_catalogo
+    networks:
+      - buyza-net
     deploy:
       replicas: 2
       placement:
@@ -53,6 +59,9 @@ services:
       - DB_USER=root
       - DB_PASSWORD=
       - DB_NAME=buyza_ordenes
+      - CATALOGO_SERVICE_URL=http://catalogo:3002
+    networks:
+      - buyza-net
     deploy:
       replicas: 2
       placement:
@@ -68,6 +77,9 @@ services:
       - DB_USER=root
       - DB_PASSWORD=
       - DB_NAME=buyza_pagos
+      - CREDITO_SERVICE_URL=http://credito:3005
+    networks:
+      - buyza-net
     deploy:
       replicas: 2
       placement:
@@ -83,6 +95,8 @@ services:
       - DB_USER=root
       - DB_PASSWORD=
       - DB_NAME=buyza_credito
+    networks:
+      - buyza-net
     deploy:
       replicas: 2
       placement:
@@ -93,11 +107,17 @@ services:
     image: dcontreras1402/ms-frontend:latest
     ports:
       - "5173:5173"
+    networks:
+      - buyza-net
     deploy:
       replicas: 1
       placement:
         constraints:
           - node.role == worker
+
+networks:
+  buyza-net:
+    driver: overlay
 
 volumes:
   db_data:

@@ -10,7 +10,6 @@ const CONFIG = {
   },
 
   get USUARIOS_URL() { return `${this.API_BASE_URL}:${this.PORTS.USUARIOS}/api/usuarios`; },
-  get CREDITO_URL()  { return `${this.API_BASE_URL}:${this.PORTS.CREDITO}/api/credito`; },
   get CATALOGO_URL() { return `${this.API_BASE_URL}:${this.PORTS.CATALOGO}/api/catalogo`; },
   get ORDENES_URL()  { return `${this.API_BASE_URL}:${this.PORTS.ORDENES}/api/ordenes`; },
   get PAGOS_URL()    { return `${this.API_BASE_URL}:${this.PORTS.PAGOS}/api/pagos`; },
