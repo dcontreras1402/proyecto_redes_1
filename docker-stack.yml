@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - db_data:/var/lib/mysql
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  usuarios:
+    image: dcontreras1402/ms-usuarios:latest
+    ports:
+      - "3001:3001"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=marketplace_usuarios
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - node.role == manager
+
+  catalogo:
+    image: dcontreras1402/ms-catalogo:latest
+    ports:
+      - "3002:3002"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_catalogo
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - node.role == manager
+
+  ordenes:
+    image: dcontreras1402/ms-ordenes:latest
+    ports:
+      - "3003:3003"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_ordenes
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - node.role == manager
+
+  pagos:
+    image: dcontreras1402/ms-pagos:latest
+    ports:
+      - "3004:3004"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_pagos
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - node.role == manager
+
+  credito:
+    image: dcontreras1402/ms-credito:latest
+    ports:
+      - "3005:3005"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_credito
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - node.role == manager
+
+  frontend:
+    image: dcontreras1402/ms-frontend:latest
+    ports:
+      - "5173:5173"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+
+volumes:
+  db_data:
