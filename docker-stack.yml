@@ -23,15 +23,14 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=
       - DB_NAME=marketplace_usuarios
     networks:
       - buyza-net
     deploy:
       replicas: 2
-      placement:
-        constraints:
-          - node.role == manager
+      update_config:
+        parallelism: 1
+        delay: 10s
 
   catalogo:
     image: dcontreras1402/ms-catalogo:latest
@@ -40,15 +39,14 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=
       - DB_NAME=buyza_catalogo
     networks:
       - buyza-net
     deploy:
       replicas: 2
-      placement:
-        constraints:
-          - node.role == manager
+      update_config:
+        parallelism: 1
+        delay: 10s
 
   ordenes:
     image: dcontreras1402/ms-ordenes:latest
@@ -57,16 +55,15 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=
       - DB_NAME=buyza_ordenes
       - CATALOGO_SERVICE_URL=http://catalogo:3002
     networks:
       - buyza-net
     deploy:
       replicas: 2
-      placement:
-        constraints:
-          - node.role == manager
+      update_config:
+        parallelism: 1
+        delay: 10s
 
   pagos:
     image: dcontreras1402/ms-pagos:latest
@@ -75,16 +72,15 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=
       - DB_NAME=buyza_pagos
       - CREDITO_SERVICE_URL=http://credito:3005
     networks:
       - buyza-net
     deploy:
       replicas: 2
-      placement:
-        constraints:
-          - node.role == manager
+      update_config:
+        parallelism: 1
+        delay: 10s
 
   credito:
     image: dcontreras1402/ms-credito:latest
@@ -93,15 +89,14 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=
       - DB_NAME=buyza_credito
     networks:
       - buyza-net
     deploy:
       replicas: 2
-      placement:
-        constraints:
-          - node.role == manager
+      update_config:
+        parallelism: 1
+        delay: 10s
 
   frontend:
     image: dcontreras1402/ms-frontend:latest
@@ -110,10 +105,10 @@ services:
     networks:
       - buyza-net
     deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == worker
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
 
 networks:
   buyza-net:
