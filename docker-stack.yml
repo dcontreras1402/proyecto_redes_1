@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  haproxy:
+    image: haproxy:2.8
+    ports:
+      - "80:80"
+      - "8404:8404"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - buyza-net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
   db:
     image: mysql:8.0
     ports:
@@ -18,8 +32,6 @@ services:
 
   usuarios:
     image: dcontreras1402/ms-usuarios:latest
-    ports:
-      - "3001:3001"
     environment:
       - DB_HOST=db
       - DB_USER=root
@@ -34,8 +46,6 @@ services:
 
   catalogo:
     image: dcontreras1402/ms-catalogo:latest
-    ports:
-      - "3002:3002"
     environment:
       - DB_HOST=db
       - DB_USER=root
@@ -50,8 +60,6 @@ services:
 
   ordenes:
     image: dcontreras1402/ms-ordenes:latest
-    ports:
-      - "3003:3003"
     environment:
       - DB_HOST=db
       - DB_USER=root
@@ -67,8 +75,6 @@ services:
 
   pagos:
     image: dcontreras1402/ms-pagos:latest
-    ports:
-      - "3004:3004"
     environment:
       - DB_HOST=db
       - DB_USER=root
@@ -84,8 +90,6 @@ services:
 
   credito:
     image: dcontreras1402/ms-credito:latest
-    ports:
-      - "3005:3005"
     environment:
       - DB_HOST=db
       - DB_USER=root
@@ -100,8 +104,6 @@ services:
 
   frontend:
     image: dcontreras1402/ms-frontend:latest
-    ports:
-      - "5173:5173"
     networks:
       - buyza-net
     deploy:

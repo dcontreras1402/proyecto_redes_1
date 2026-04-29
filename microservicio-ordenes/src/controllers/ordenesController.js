@@ -4,10 +4,9 @@ const ordenesModel = require('../models/ordenesModel');
 const axios = require('axios');
 const { verificarToken } = require('../middlewares/authMiddleware');
 
-// Crear una orden simple para un solo producto
 router.post('/crear', verificarToken, async (req, res) => {
     try {
-        const id_comprador = req.usuario.id; // Extrae ID del token validado
+        const id_comprador = req.usuario.id; 
         const { id_producto } = req.body;
 
         if (!id_producto) {
@@ -15,18 +14,15 @@ router.post('/crear', verificarToken, async (req, res) => {
         }
 
         try {
-            // Consulta info del producto al microservicio de Catálogo
-            const resp = await axios.get(`http://192.168.100.2:3002/api/catalogo/${id_producto}`);
+            const resp = await axios.get(`http://catalogo:3002/api/catalogo/${id_producto}`);
             const prodInfo = resp.data;
 
-            // Valida disponibilidad en stock
             if (prodInfo.cantidad < 1) {
                 return res.status(400).json({ error: `Stock insuficiente para: ${prodInfo.nombre}` });
             }
 
             const totalCalculado = parseFloat(prodInfo.precio);
 
-            // Registra la orden en la base de datos local
             const id_orden = await ordenesModel.crearOrden(id_comprador, totalCalculado, [{
                 id_producto: id_producto,
                 cantidad: 1,
@@ -48,7 +44,6 @@ router.post('/crear', verificarToken, async (req, res) => {
     }
 });
 
-// Crear orden compleja con múltiples productos y pago por crédito
 router.post('/', verificarToken, async (req, res) => {
     try {
         const id_comprador = req.usuario.id;
@@ -60,10 +55,9 @@ router.post('/', verificarToken, async (req, res) => {
             return res.status(400).json({ error: 'La orden debe tener productos' });
         }
 
-        // Itera para validar stock y calcular total de todos los productos
         for (const item of productos) {
             try {
-                const resp = await axios.get(`http://192.168.100.2:3002/api/catalogo/${item.id_producto}`);
+                const resp = await axios.get(`http://catalogo:3002/api/catalogo/${item.id_producto}`);
                 const prodInfo = resp.data;
 
                 if (prodInfo.cantidad < item.cantidad) {
@@ -82,8 +76,7 @@ router.post('/', verificarToken, async (req, res) => {
         }
 
         try {
-            // Solicita el descuento del saldo al microservicio de Usuarios/Crédito
-            await axios.post('http://192.168.100.2:3005/api/credito/usar', {
+            await axios.post('http://credito:3005/api/credito/usar', {
                 usuario_id: id_comprador,
                 monto: totalCalculado,
                 cuotas: cuotas || 1
@@ -93,12 +86,10 @@ router.post('/', verificarToken, async (req, res) => {
             return res.status(err.response?.status || 400).json({ error: msg });
         }
 
-        // Inserta la orden principal y sus detalles en DB
         const id_orden = await ordenesModel.crearOrden(id_comprador, totalCalculado, productosValidados);
 
-        // Actualiza el stock restando lo comprado en el microservicio de Catálogo
         for (const item of productosValidados) {
-            await axios.put(`http://192.168.100.2:3002/api/catalogo/${item.id_producto}/reducir-stock`, {
+            await axios.put(`http://catalogo:3002/api/catalogo/${item.id_producto}/reducir-stock`, {
                 cantidad_comprada: item.cantidad
             });
         }
@@ -114,7 +105,6 @@ router.post('/', verificarToken, async (req, res) => {
     }
 });
 
-// Obtener historial de órdenes de un usuario específico
 router.get('/usuario/:id', verificarToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -125,7 +115,6 @@ router.get('/usuario/:id', verificarToken, async (req, res) => {
     }
 });
 
-// Obtener información general de una orden por su ID
 router.get('/info/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -137,7 +126,6 @@ router.get('/info/:id', async (req, res) => {
     }
 });
 
-// Obtener el detalle de productos de una orden específica
 router.get('/:id', verificarToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -148,7 +136,6 @@ router.get('/:id', verificarToken, async (req, res) => {
     }
 });
 
-// Cambiar el estado de la orden (ej: 'pendiente' a 'pagado')
 router.put('/:id/estado', async (req, res) => {
     try {
         const { id } = req.params;
