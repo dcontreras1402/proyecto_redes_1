@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catálogo - Buyza</title>
   <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .paginacion-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .paginacion-info {
+      font-weight: 600;
+      color: var(--gray-600, #4b5563);
+    }
+  </style>
 </head>
 <body>
 
@@ -26,12 +39,20 @@
   <div id="grid-productos" class="features-grid">
     <p id="loading-text" style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Cargando productos...</p>
   </div>
+
+  <div class="paginacion-container">
+    <button id="btn-anterior" onclick="cambiarPagina(-1)" class="btn btn-outline" style="padding:0.5rem 1.5rem; font-size:0.85rem">Anterior</button>
+    <span id="info-pagina" class="paginacion-info">Página 1</span>
+    <button id="btn-siguiente" onclick="cambiarPagina(1)" class="btn btn-outline" style="padding:0.5rem 1.5rem; font-size:0.85rem">Siguiente</button>
+  </div>
 </div>
 
 <script src="../js/config.js?v=1.1"></script>
 <script src="../js/api.js?v=1.1"></script>
 <script>
   const user = getUsuario();
+  let paginaActual = 1;
+  const limiteProductos = 24;
   
   if (!user || !localStorage.getItem('token')) {
     window.location.href = 'login.html';
@@ -44,8 +65,14 @@
 
   async function cargarProductos() {
     const grid = document.getElementById('grid-productos');
+    const btnAnterior = document.getElementById('btn-anterior');
+    const btnSiguiente = document.getElementById('btn-siguiente');
+    const infoPagina = document.getElementById('info-pagina');
+
+    grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Cargando productos...</p>';
+    
     try {
-      const productos = await catalogo.get('');
+      const productos = await catalogo.get(`?page=${paginaActual}&limit=${limiteProductos}`);
       
       if (!productos || productos.error) {
         mostrarAlerta('alerta', productos?.error || 'Error al cargar productos', 'error');
@@ -56,7 +83,10 @@
       const lista = Array.isArray(productos) ? productos : (productos.productos || []);
 
       if (lista.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No hay productos disponibles.</p>';
+        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No hay productos disponibles en esta página.</p>';
+        btnSiguiente.disabled = true;
+        infoPagina.innerText = `Página ${paginaActual}`;
+        btnAnterior.disabled = paginaActual === 1;
         return;
       }
 
@@ -72,29 +102,32 @@
           <div style="font-size:0.7rem; color:var(--gray-400); margin-top:0.5rem">Vendido por: ${p.vendedor_nombre || p.vendedor || 'Usuario'}</div>
         </div>
       `).join('');
+
+      infoPagina.innerText = `Página ${paginaActual}`;
+      btnAnterior.disabled = paginaActual === 1;
+      btnSiguiente.disabled = lista.length < limiteProductos;
+
     } catch (err) {
       mostrarAlerta('alerta', 'Error de conexión con el servidor', 'error');
       grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Error de red o configuración.</p>';
     }
   }
 
-  // Función que se dispara al hacer clic en el botón "Comprar" de un producto
+  function cambiarPagina(direccion) {
+    paginaActual += direccion;
+    cargarProductos();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function comprar(id_producto) {
     try {
-      // 1. Llamada al Microservicio de Órdenes (Puerto 3003)
-      // Se envía el id_producto; el microservicio valida stock y precio
       const res = await ordenes.post('/crear', { id_producto });
       if(res && res.id_orden) {
-        // Si la orden se creó con éxito (estado 'pendiente')
         mostrarAlerta('alerta', 'Orden creada correctamente', 'success');
-
-        // 2. Redirección automática al flujo de Pagos
-        // Pasamos el ID de la orden recién creada por la URL
         setTimeout(() => {
           window.location.href = `pago.html?id=${res.id_orden}`;
         }, 1200);
       } else {
-        // Manejo de errores (ej: producto sin stock)
         mostrarAlerta('alerta', res?.error || 'Error al procesar compra', 'error');
       }
     } catch (err) {

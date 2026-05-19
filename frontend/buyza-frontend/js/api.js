@@ -4,26 +4,37 @@ const api = {
       console.error("Error crítico: Base URL no definida para", endpoint);
       throw new Error("Base URL es requerida");
     }
+
+    if (endpoint && (endpoint.includes('null') || endpoint.includes('undefined'))) {
+      console.warn(`Petición cancelada preventivamente hacia endpoint inválido: ${endpoint}`);
+      throw { error: 'Ruta no válida', detalle: 'ID de recurso no definido', status: 400 };
+    }
+
     const token = localStorage.getItem('token');
     const options = {
       method,
       headers: { 'Content-Type': 'application/json' }
     };
+
     if (token) options.headers['Authorization'] = `Bearer ${token}`;
     if (data) options.body = JSON.stringify(data);
+
     const cleanBase = base.endsWith('/') ? base : `${base}/`;
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const cleanEndpoint = endpoint && endpoint.startsWith('/') ? endpoint.slice(1) : (endpoint || '');
     const url = `${cleanBase}${cleanEndpoint}`;
+
     try {
       const res = await fetch(url, options);
       let result;
       const contentType = res.headers.get('content-type');
+
       if (contentType && contentType.includes('application/json')) {
         result = await res.json();
       } else {
         const text = await res.text();
         throw { error: 'Respuesta no válida', detalle: text, status: res.status };
       }
+
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           cerrarSesion();
@@ -33,12 +44,14 @@ const api = {
         err.status = res.status;
         throw err;
       }
+
       return result;
     } catch (err) {
       console.error(`Error en ${method} ${url}:`, err);
       throw err;
     }
   },
+
   post(ep, data, base)   { return this.request('POST', ep, data, base); },
   get(ep, base)           { return this.request('GET', ep, null, base); },
   put(ep, data, base)    { return this.request('PUT', ep, data, base); },
@@ -52,9 +65,9 @@ const usuarios = {
 };
 
 const creditos = {
-  get:  (ep = '')  => api.get(ep, CONFIG.CREDITO_URL),
-  post: (ep, data) => api.post(ep, data, CONFIG.CREDITO_URL),
-  put:  (ep, data) => api.put(ep, data, CONFIG.CREDITO_URL),
+  get:  (ep = '')  => api.get(ep, CONFIG.CREDITOS_URL),
+  post: (ep, data) => api.post(ep, data, CONFIG.CREDITOS_URL),
+  put:  (ep, data) => api.put(ep, data, CONFIG.CREDITOS_URL),
 };
 
 const catalogo = {
@@ -71,13 +84,28 @@ const ordenes = {
 };
 
 const pagos = {
-  get:  (ep = '')  => api.get(ep, CONFIG.PAGOS_URL),
+  get: function(ep = '') {
+    if (ep.includes('null') || ep.includes('undefined') || ep === 'estado-cuenta/') {
+      const user = getUsuario();
+      const id = user ? (user.id || user.id_usuario) : null;
+      if (id) {
+        ep = `estado-cuenta/${id}`;
+      }
+    }
+    return api.get(ep, CONFIG.PAGOS_URL);
+  },
   post: (ep, data) => api.post(ep, data, CONFIG.PAGOS_URL),
 };
 
 function getUsuario() {
   const data = localStorage.getItem('usuario');
-  return data ? JSON.parse(data) : null;
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    console.error("Error parseando usuario", e);
+    return null;
+  }
 }
 
 function cerrarSesion() {

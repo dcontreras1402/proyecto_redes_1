@@ -5,7 +5,10 @@ const { verificarToken, soloAdmin } = require('../middlewares/authMiddleware');
 
 router.get('/', async (req, res) => {
     try {
-        const productos = await catalogoModel.obtenerProductosActivos();
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 24;
+
+        const productos = await catalogoModel.obtenerProductosActivos(page, limit);
         res.status(200).json(productos);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -27,8 +30,6 @@ router.post('/', verificarToken, async (req, res) => {
     try {
         const { nombre, descripcion, precio, cantidad } = req.body;
         const id_vendedor = req.usuario.id;
-
-        // ✅ lógica correcta: confiar en JWT
         const aprobado = req.usuario.rol === 'vendedor';
 
         await catalogoModel.crearProducto(
@@ -41,7 +42,6 @@ router.post('/', verificarToken, async (req, res) => {
         );
 
         res.status(201).json({ mensaje: 'Producto creado correctamente' });
-
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

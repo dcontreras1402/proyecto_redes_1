@@ -1,8 +1,10 @@
 const db = require('../config/db');
 
-async function obtenerProductosActivos() {
+async function obtenerProductosActivos(page = 1, limit = 24) {
+    const offset = (page - 1) * limit;
     const [rows] = await db.query(
-        'SELECT * FROM productos WHERE activo = true AND aprobado = true'
+        'SELECT * FROM productos WHERE activo = true AND aprobado = true LIMIT ? OFFSET ?',
+        [limit, offset]
     );
     return rows;
 }
@@ -15,7 +17,6 @@ async function obtenerProductoPorId(id) {
     return rows[0];
 }
 
-// ✅ SIN consultar otra DB (microservicios bien hechos)
 async function crearProducto(id_vendedor, nombre, descripcion, precio, cantidad, aprobado) {
     const [result] = await db.query(
         `INSERT INTO productos 
