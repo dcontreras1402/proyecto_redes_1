@@ -14,7 +14,7 @@ router.post('/crear', verificarToken, async (req, res) => {
         }
 
         try {
-            const resp = await axios.get(`http://catalogo:3002/api/catalogo/${id_producto}`);
+            const resp = await axios.get(`http://haproxy/api/catalogo/${id_producto}`);
             const prodInfo = resp.data;
 
             if (prodInfo.cantidad < 1) {
@@ -57,7 +57,7 @@ router.post('/', verificarToken, async (req, res) => {
 
         for (const item of productos) {
             try {
-                const resp = await axios.get(`http://catalogo:3002/api/catalogo/${item.id_producto}`);
+                const resp = await axios.get(`http://haproxy/api/catalogo/${item.id_producto}`);
                 const prodInfo = resp.data;
 
                 if (prodInfo.cantidad < item.cantidad) {
@@ -76,7 +76,7 @@ router.post('/', verificarToken, async (req, res) => {
         }
 
         try {
-            await axios.post('http://credito:3005/api/credito/usar', {
+            await axios.post('http://haproxy/api/credito/usar', {
                 usuario_id: id_comprador,
                 monto: totalCalculado,
                 cuotas: cuotas || 1
@@ -89,7 +89,7 @@ router.post('/', verificarToken, async (req, res) => {
         const id_orden = await ordenesModel.crearOrden(id_comprador, totalCalculado, productosValidados);
 
         for (const item of productosValidados) {
-            await axios.put(`http://catalogo:3002/api/catalogo/${item.id_producto}/reducir-stock`, {
+            await axios.put(`http://haproxy/api/catalogo/${item.id_producto}/reducir-stock`, {
                 cantidad_comprada: item.cantidad
             });
         }
