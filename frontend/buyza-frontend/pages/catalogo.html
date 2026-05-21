@@ -91,7 +91,7 @@
         // 2. Redirección automática al flujo de Pagos
         // Pasamos el ID de la orden recién creada por la URL
         setTimeout(() => {
-          window.location.href = `pago.html?id=${res.id_orden}`;
+          console.log('Guardando orden:', res.id_orden); localStorage.setItem('orden_pendiente', String(res.id_orden)); console.log('localStorage después:', localStorage.getItem('orden_pendiente')); window.location.href = '/pages/pago';
         }, 1200);
       } else {
         // Manejo de errores (ej: producto sin stock)
