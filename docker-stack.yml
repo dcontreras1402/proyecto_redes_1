@@ -75,7 +75,7 @@ services:
         delay: 10s
 
   pagos:
-    image: dcontreras1402/ms-pagos:v1
+    image: dcontreras1402/ms-pagos:latest
     environment:
       - DB_HOST=db
       - DB_USER=root

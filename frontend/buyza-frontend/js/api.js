@@ -85,7 +85,9 @@ const ordenes = {
 
 const pagos = {
   get: function(ep = '') {
-    if (ep.includes('null') || ep.includes('undefined') || ep === 'estado-cuenta/') {
+    // ✅ ARREGLADO: Solo reemplazar si está vacío O es exactamente "estado-cuenta/"
+    // NO reemplazar si viene como "/estado-cuenta/123" o "estado-cuenta/123"
+    if (!ep || ep === '' || ep === '/' || ep === 'estado-cuenta/') {
       const user = getUsuario();
       const id = user ? (user.id || user.id_usuario) : null;
       if (id) {
