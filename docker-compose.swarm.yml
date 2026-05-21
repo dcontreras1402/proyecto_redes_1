@@ -181,3 +181,17 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  haproxy:
+    image: haproxy:2.8
+    ports:
+      - "5081:5081"
+      - "4001:4001"
+      - "4002:4002"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - buyza-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
