@@ -1,156 +1,138 @@
-version: "3.8"
-
-networks:
-  buyza-net:
-    external: true
-    name: buyza_buyza-net
+version: '3.8'
 
 services:
-  db-central:
-    image: mysql:8.0
-    command: ["--innodb-buffer-pool-size=128M", "--performance-schema=OFF"]
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-      restart_policy:
-        condition: on-failure
-
-  ms-usuarios:
-    image: dcontreras1402/ms-usuarios:latest
-    environment:
-      DB_HOST: db-central
-      DB_USER: root
-      DB_PASS: ""
-      DB_NAME: marketplace_usuarios
-      PORT: 3001
-    ports:
-      - "3001:3001"
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 2
-      placement:
-        constraints:
-          - node.role == worker
-      restart_policy:
-        condition: on-failure
-
-  ms-catalogo:
-    image: dcontreras1402/ms-catalogo:latest
-    environment:
-      DB_HOST: db-central
-      DB_USER: root
-      DB_PASS: ""
-      DB_NAME: buyza_catalogo
-      PORT: 3002
-    ports:
-      - "3002:3002"
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 2
-      placement:
-        constraints:
-          - node.role == worker
-      restart_policy:
-        condition: on-failure
-
-  ms-ordenes:
-    image: dcontreras1402/ms-ordenes:latest
-    environment:
-      DB_HOST: db-central
-      DB_USER: root
-      DB_PASS: ""
-      DB_NAME: buyza_ordenes
-      URL_CATALOGO: http://ms-catalogo:3002
-      URL_PAGOS: http://ms-pagos:3004
-      PORT: 3003
-    ports:
-      - "3003:3003"
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 2
-      placement:
-        constraints:
-          - node.role == worker
-      restart_policy:
-        condition: on-failure
-
-  ms-pagos:
-    image: dcontreras1402/ms-pagos:latest
-    environment:
-      DB_HOST: db-central
-      DB_USER: root
-      DB_PASS: ""
-      DB_NAME: buyza_pagos
-      PORT: 3004
-    ports:
-      - "3004:3004"
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 2
-      placement:
-        constraints:
-          - node.role == worker
-      restart_policy:
-        condition: on-failure
-
-  ms-credito:
-    image: dcontreras1402/ms-credito:latest
-    environment:
-      DB_HOST: db-central
-      DB_USER: root
-      DB_PASS: ""
-      DB_NAME: buyza_credito
-      PORT: 3005
-    ports:
-      - "3005:3005"
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 2
-      placement:
-        constraints:
-          - node.role == worker
-      restart_policy:
-        condition: on-failure
-
-  frontend:
-    image: dcontreras1402/ms-frontend:latest
-    ports:
-      - "80:80"
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == worker
-      restart_policy:
-        condition: on-failure
-
   haproxy:
     image: haproxy:2.8
     ports:
-      - "5081:5081"
-      - "4001:4001"
-      - "4002:4002"
+      - "80:80"
+      - "8404:8404"
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     networks:
       - buyza-net
     deploy:
-      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_ROOT_HOST=%
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d:ro   # scripts SQL de inicialización
+    networks:
+      - buyza-net
+    deploy:
       placement:
         constraints:
           - node.role == worker
-      restart_policy:
-        condition: on-failure
+
+  usuarios:
+    image: dcontreras1402/ms-usuarios:latest
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      # ✅ CORREGIDO: era marketplace_usuarios, debe ser buyza_usuarios
+      - DB_NAME=buyza_usuarios
+      - JWT_SECRET=${JWT_SECRET:-cambiar_este_secreto_jwt}
+      - PORT=3001
+    networks:
+      - buyza-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  catalogo:
+    image: dcontreras1402/ms-catalogo:latest
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_catalogo
+      - JWT_SECRET=${JWT_SECRET:-cambiar_este_secreto_jwt}
+      - PORT=3002
+    networks:
+      - buyza-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  ordenes:
+    image: dcontreras1402/ms-ordenes:latest
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_ordenes
+      - JWT_SECRET=${JWT_SECRET:-cambiar_este_secreto_jwt}
+      - PORT=3003
+      - CATALOGO_SERVICE_URL=http://haproxy/api/catalogo
+    networks:
+      - buyza-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  pagos:
+    image: dcontreras1402/ms-pagos:latest
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_pagos
+      - JWT_SECRET=${JWT_SECRET:-cambiar_este_secreto_jwt}
+      # ✅ CORREGIDO: era 3001 en .env.template, debe ser 3004
+      - PORT=3004
+    networks:
+      - buyza-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  credito:
+    image: dcontreras1402/ms-credito:latest
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=buyza_credito
+      - JWT_SECRET=${JWT_SECRET:-cambiar_este_secreto_jwt}
+      - PORT=3005
+    networks:
+      - buyza-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  frontend:
+    image: dcontreras1402/ms-frontend:latest
+    networks:
+      - buyza-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+networks:
+  buyza-net:
+    driver: overlay
+
+volumes:
+  db_data:
