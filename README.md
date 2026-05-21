@@ -27,7 +27,7 @@ Cada microservicio tiene su propia base de datos.
 
 ## 🗄️ Bases de Datos
 
-* `buyza_usuarios`
+* `marketplace_usuarios`
 * `buyza_catalogo`
 * `buyza_ordenes`
 * `buyza_pagos`

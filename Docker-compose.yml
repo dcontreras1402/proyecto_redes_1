@@ -5,7 +5,7 @@ services:
     restart: always
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: buyza_usuarios
+      MYSQL_DATABASE: marketplace_usuarios
     ports:
       - "3311:3306"
 
@@ -58,7 +58,7 @@ services:
       DB_HOST: db-usuarios
       DB_USER: root
       DB_PASS: ""
-      DB_NAME: buyza_usuarios
+      DB_NAME: marketplace_usuarios
       PORT: 3001
       JWT_SECRET: PassMarketplace0001
     ports:

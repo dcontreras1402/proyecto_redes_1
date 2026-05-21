@@ -1,86 +1,33 @@
 version: "3.8"
+
 networks:
   buyza-net:
-    driver: overlay
-volumes:
-  data-usuarios:
-  data-catalogo:
-  data-ordenes:
-  data-pagos:
-  data-credito:
+    external: true
+    name: buyza_buyza-net
+
 services:
-  db-usuarios:
+  db-central:
     image: mysql:8.0
+    command: ["--innodb-buffer-pool-size=128M", "--performance-schema=OFF"]
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: buyza_usuarios
-    volumes:
-      - data-usuarios:/var/lib/mysql
     networks:
       - buyza-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
-  db-catalogo:
-    image: mysql:8.0
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: buyza_catalogo
-    volumes:
-      - data-catalogo:/var/lib/mysql
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-  db-ordenes:
-    image: mysql:8.0
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: buyza_ordenes
-    volumes:
-      - data-ordenes:/var/lib/mysql
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-  db-pagos:
-    image: mysql:8.0
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: buyza_pagos
-    volumes:
-      - data-pagos:/var/lib/mysql
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-  db-credito:
-    image: mysql:8.0
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: buyza_credito
-    volumes:
-      - data-credito:/var/lib/mysql
-    networks:
-      - buyza-net
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+
   ms-usuarios:
-    image: buyza/ms-usuarios:latest
+    image: dcontreras1402/ms-usuarios:latest
     environment:
-      DB_HOST: db-usuarios
+      DB_HOST: db-central
       DB_USER: root
       DB_PASS: ""
-      DB_NAME: buyza_usuarios
+      DB_NAME: marketplace_usuarios
       PORT: 3001
     ports:
       - "3001:3001"
@@ -88,15 +35,16 @@ services:
       - buyza-net
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
-      update_config:
-        parallelism: 1
-        delay: 10s
+
   ms-catalogo:
-    image: buyza/ms-catalogo:latest
+    image: dcontreras1402/ms-catalogo:latest
     environment:
-      DB_HOST: db-catalogo
+      DB_HOST: db-central
       DB_USER: root
       DB_PASS: ""
       DB_NAME: buyza_catalogo
@@ -107,15 +55,16 @@ services:
       - buyza-net
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
-      update_config:
-        parallelism: 1
-        delay: 10s
+
   ms-ordenes:
-    image: buyza/ms-ordenes:latest
+    image: dcontreras1402/ms-ordenes:latest
     environment:
-      DB_HOST: db-ordenes
+      DB_HOST: db-central
       DB_USER: root
       DB_PASS: ""
       DB_NAME: buyza_ordenes
@@ -128,15 +77,16 @@ services:
       - buyza-net
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
-      update_config:
-        parallelism: 1
-        delay: 10s
+
   ms-pagos:
-    image: buyza/ms-pagos:latest
+    image: dcontreras1402/ms-pagos:latest
     environment:
-      DB_HOST: db-pagos
+      DB_HOST: db-central
       DB_USER: root
       DB_PASS: ""
       DB_NAME: buyza_pagos
@@ -147,15 +97,16 @@ services:
       - buyza-net
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
-      update_config:
-        parallelism: 1
-        delay: 10s
+
   ms-credito:
-    image: buyza/ms-credito:latest
+    image: dcontreras1402/ms-credito:latest
     environment:
-      DB_HOST: db-credito
+      DB_HOST: db-central
       DB_USER: root
       DB_PASS: ""
       DB_NAME: buyza_credito
@@ -166,21 +117,26 @@ services:
       - buyza-net
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
-      update_config:
-        parallelism: 1
-        delay: 10s
+
   frontend:
-    image: buyza/frontend:latest
+    image: dcontreras1402/ms-frontend:latest
     ports:
       - "80:80"
     networks:
       - buyza-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
+
   haproxy:
     image: haproxy:2.8
     ports:
@@ -193,5 +149,8 @@ services:
       - buyza-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
