@@ -196,7 +196,7 @@
       document.getElementById('statCupoTotal').textContent = formatPeso(total);
       document.getElementById('statCupoUsado').textContent = formatPeso(usado);
       
-      document.getElementById('btnLiquidarTodo').style.display = usado > 1 ? 'block' : 'none';
+      // btnLiquidarTodo se actualiza en cargarCuotas()
 
       setTimeout(() => { 
         document.getElementById('cupoProgressFill').style.width = pct + '%'; 
@@ -208,6 +208,7 @@
     try {
       const cuotas = await creditos.get('cuotas');
       document.getElementById('statCuotasPendientes').textContent = cuotas.length;
+      document.getElementById('btnLiquidarTodo').style.display = cuotas.length > 1 ? 'block' : 'none';
       
       if (cuotas.length > 0) {
         document.getElementById('listaCuotas').innerHTML = cuotas.map(c => `
@@ -247,6 +248,9 @@
   }
 
   async function pagarCuota(id) {
+    if (window._pagando) return;
+    window._pagando = true;
+    setTimeout(() => window._pagando = false, 3000);
     try {
       await creditos.post(`pagar/${id}`, {});
       mostrarAlerta('alertGlobal', '¡Mensualidad pagada!', 'success');
@@ -255,7 +259,9 @@
   }
 
   async function liquidarDeudaTotal() {
-    if (!confirm('¿Estás seguro de que deseas liquidar el total de tu deuda actual?')) return;
+    console.log('LIQUIDAR LLAMADO desde:', new Error().stack);
+    if (window._pagando) return;
+    const confirmText = prompt('Escribe LIQUIDAR para confirmar la liquidación total de tu deuda:'); if (confirmText !== 'LIQUIDAR') return;
     try {
       await creditos.post('liquidar', {});
       mostrarAlerta('alertGlobal', '¡Deuda liquidada con éxito!', 'success');
@@ -281,6 +287,8 @@
   }
 
   async function confirmarCredito() {
+    console.log('CONFIRMAR CREDITO llamado stack:', new Error().stack);
+    console.log('CONFIRMAR CREDITO llamado stack:', new Error().stack);
     const monto = parseFloat(document.getElementById('montoCredito').value);
     const cuotas = parseInt(document.getElementById('numCuotas').value);
     if (!monto || monto > cupoActual) return mostrarAlerta('alertModal', 'Monto inválido o cupo insuficiente', 'danger');

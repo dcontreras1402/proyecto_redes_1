@@ -30,6 +30,7 @@ const verCredito = async (req, res) => {
 };
 
 const usarCredito = async (req, res) => {
+  console.log('>>> USAR CREDITO llamado:', JSON.stringify(req.body), '| IP:', req.ip, '| Headers:', JSON.stringify(req.headers['user-agent']));
   const { usuario_id, monto, cuotas, compra_id } = req.body;
   if (!usuario_id || !monto || !cuotas) return res.status(400).json({ error: 'Faltan datos requeridos' });
 
@@ -71,7 +72,10 @@ const pagarCuota = async (req, res) => {
 
     if (completada) {
       const actualizacion = await creditoModel.actualizarCompletadas(usuarioId);
-      if (actualizacion.nuevas_compras > 0 && actualizacion.nuevas_compras % 3 === 0) await creditoModel.aumentarCupo(usuarioId);
+      if (actualizacion.nuevas_compras % 3 === 0) {
+        await creditoModel.aumentarCupo(usuarioId);
+        await movimientoModel.registrarMovimiento(usuarioId, 'aumento_cupo', 50000, resultadoDevolucion.nuevo_cupo, resultadoDevolucion.nuevo_cupo + 50000, `Aumento de cupo por ${actualizacion.nuevas_compras} compras completadas`);
+      }
     }
 
     res.json({ mensaje: 'Pago realizado', cupo_disponible: resultadoDevolucion.nuevo_cupo });
@@ -91,23 +95,54 @@ const liquidarDeudaTotal = async (req, res) => {
 
     if (deudaTotal <= 0) return res.status(400).json({ error: 'No tienes deudas pendientes' });
 
-    // 1. Marcamos todas las cuotas como pagadas de una sola vez
+    // ✅ CORREGIDO: Contar cuántas cuotas pendientes se van a liquidar
+    const cuotasPendientes = await cuotaModel.obtenerCuotasPendientes(usuarioId);
+    const cantidadCuotasLiquidadas = cuotasPendientes.length;
+
+    // 1. Marcar todas las cuotas como pagadas
     await cuotaModel.liquidarTodasLasCuotas(usuarioId);
 
-    // 2. Devolvemos el cupo total al usuario
+    // 2. Devolver el cupo total
     const resultado = await creditoModel.devolverCupo(usuarioId, deudaTotal);
 
-    // 3. Registramos un único movimiento de liquidación
+    // 3. Registrar movimiento de liquidación
     await movimientoModel.registrarMovimiento(
-      usuarioId, 
-      'pago', 
-      deudaTotal, 
-      cupoDisponible, 
-      resultado.nuevo_cupo, 
+      usuarioId,
+      'pago',
+      deudaTotal,
+      cupoDisponible,
+      resultado.nuevo_cupo,
       'Liquidación total de deuda'
     );
 
-    res.json({ mensaje: 'Deuda liquidada por completo', cupo_disponible: resultado.nuevo_cupo });
+    // ✅ CORREGIDO: Actualizar compras_completadas por cada cuota liquidada
+    //    y verificar si corresponde aumento de cupo
+    let cupoActualizado = resultado.nuevo_cupo;
+    for (let i = 0; i < cantidadCuotasLiquidadas; i++) {
+      const actualizacion = await creditoModel.actualizarCompletadas(usuarioId);
+      if (actualizacion.nuevas_compras % 3 === 0) {
+        const aumento = await creditoModel.aumentarCupo(usuarioId);
+        cupoActualizado = aumento.cupo_nuevo;
+        await movimientoModel.registrarMovimiento(
+          usuarioId,
+          'aumento_cupo',
+          50000,
+          cupoActualizado - 50000,
+          cupoActualizado,
+          `Aumento de cupo por ${actualizacion.nuevas_compras} compras completadas`
+        );
+      }
+    }
+
+    // Leer crédito final actualizado para responder con datos frescos
+    const creditoFinal = await creditoModel.obtenerCreditoUsuario(usuarioId);
+
+    res.json({
+      mensaje: 'Deuda liquidada por completo',
+      cupo_disponible: creditoFinal.cupo_disponible,
+      compras_completadas: creditoFinal.compras_completadas,
+      compras_para_aumento: 3 - (creditoFinal.compras_completadas % 3)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

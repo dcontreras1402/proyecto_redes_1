@@ -80,6 +80,9 @@
 
   // Función que se dispara al hacer clic en el botón "Comprar" de un producto
   async function comprar(id_producto) {
+    if (window._comprando) return;
+    window._comprando = true;
+    setTimeout(() => window._comprando = false, 3000);
     try {
       // 1. Llamada al Microservicio de Órdenes (Puerto 3003)
       // Se envía el id_producto; el microservicio valida stock y precio
