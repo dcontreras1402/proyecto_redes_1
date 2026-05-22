@@ -55,8 +55,6 @@
     .resumen-cuotas { background: #f8fafc; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 1.25rem; margin: 1.5rem 0; }
     .resumen-row { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.5rem; }
     .resumen-row.total { border-top: 1px dashed var(--gray-300); padding-top: 0.5rem; font-weight: 700; }
-    .btn-liquidar { margin-top: 10px; padding: 6px 12px; font-size: 0.75rem; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; display: none; font-weight: 700; transition: background 0.2s; }
-    .btn-liquidar:hover { background: #991b1b; }
     .empty-state { padding: 2rem; text-align: center; color: var(--gray-400); font-style: italic; }
   </style>
 </head>
@@ -116,7 +114,6 @@
           <div class="stat-label">Deuda Actual</div>
           <div class="stat-value red" id="statCupoUsado">$0</div>
         </div>
-        <button class="btn-liquidar" id="btnLiquidarTodo" onclick="liquidarDeudaTotal()">Liquidar todo</button>
       </div>
       <div class="stat-card">
         <div class="stat-label">Cuotas Pendientes</div>
@@ -195,8 +192,6 @@
       document.getElementById('comprasParaAumento').textContent = data.compras_para_aumento || 0;
       document.getElementById('statCupoTotal').textContent = formatPeso(total);
       document.getElementById('statCupoUsado').textContent = formatPeso(usado);
-      
-      // btnLiquidarTodo se actualiza en cargarCuotas()
 
       setTimeout(() => { 
         document.getElementById('cupoProgressFill').style.width = pct + '%'; 
@@ -208,10 +203,12 @@
     try {
       const cuotas = await creditos.get('cuotas');
       document.getElementById('statCuotasPendientes').textContent = cuotas.length;
-      document.getElementById('btnLiquidarTodo').style.display = cuotas.length > 1 ? 'block' : 'none';
       
+      const listaCuotas = document.getElementById('listaCuotas');
+      listaCuotas.innerHTML = '';
+
       if (cuotas.length > 0) {
-        document.getElementById('listaCuotas').innerHTML = cuotas.map(c => `
+        listaCuotas.innerHTML = cuotas.map(c => `
           <div class="cuota-item">
             <div class="cuota-top-row">
               <span class="cuota-monto">${formatPeso(c.monto_total)}</span>
@@ -224,7 +221,7 @@
             <button class="btn btn-success btn-full" style="margin-top: 1rem;" onclick="pagarCuota(${c.id})">Pagar mensualidad</button>
           </div>`).join('');
       } else {
-        document.getElementById('listaCuotas').innerHTML = '<div class="empty-state">No tienes deudas pendientes.</div>';
+        listaCuotas.innerHTML = '<div class="empty-state">No tienes deudas pendientes.</div>';
       }
     } catch (err) { console.error(err); }
   }
@@ -233,7 +230,10 @@
     try {
       const movs = await creditos.get('historial');
       const iconos = { compra: '🛒', pago: '💰', aumento_cupo: '📈' };
-      document.getElementById('listaHistorial').innerHTML = movs.length ? movs.map(m => `
+      const listaHistorial = document.getElementById('listaHistorial');
+      listaHistorial.innerHTML = '';
+
+      listaHistorial.innerHTML = movs.length ? movs.map(m => `
         <div class="historial-item">
           <div class="historial-icon ${m.tipo === 'compra' ? 'compra' : (m.tipo === 'pago' ? 'pago' : 'aumento')}">${iconos[m.tipo] || '📊'}</div>
           <div class="historial-desc">
@@ -258,17 +258,6 @@
     } catch (err) { mostrarAlerta('alertGlobal', 'Error al procesar pago', 'danger'); }
   }
 
-  async function liquidarDeudaTotal() {
-    console.log('LIQUIDAR LLAMADO desde:', new Error().stack);
-    if (window._pagando) return;
-    const confirmText = prompt('Escribe LIQUIDAR para confirmar la liquidación total de tu deuda:'); if (confirmText !== 'LIQUIDAR') return;
-    try {
-      await creditos.post('liquidar', {});
-      mostrarAlerta('alertGlobal', '¡Deuda liquidada con éxito!', 'success');
-      cargarTodo();
-    } catch (err) { mostrarAlerta('alertGlobal', 'Error al liquidar deuda', 'danger'); }
-  }
-
   function abrirModalCredito() { document.getElementById('modalCredito').classList.add('show'); }
   function cerrarModalCredito() { 
     document.getElementById('modalCredito').classList.remove('show');
@@ -287,8 +276,6 @@
   }
 
   async function confirmarCredito() {
-    console.log('CONFIRMAR CREDITO llamado stack:', new Error().stack);
-    console.log('CONFIRMAR CREDITO llamado stack:', new Error().stack);
     const monto = parseFloat(document.getElementById('montoCredito').value);
     const cuotas = parseInt(document.getElementById('numCuotas').value);
     if (!monto || monto > cupoActual) return mostrarAlerta('alertModal', 'Monto inválido o cupo insuficiente', 'danger');

@@ -4,7 +4,9 @@ const movimientoModel = require('../models/movimientoModel');
 
 const verCredito = async (req, res) => {
   try {
-    const usuarioId = req.user?.id || req.usuario?.id;
+    const usuarioId = req.user?.id || req.usuario?.id || req.query?.usuario_id;
+    if (!usuarioId) return res.status(400).json({ error: 'Usuario no identificado' });
+
     let credito = await creditoModel.obtenerCreditoUsuario(usuarioId);
 
     if (!credito) {
@@ -30,11 +32,23 @@ const verCredito = async (req, res) => {
 };
 
 const usarCredito = async (req, res) => {
-  console.log('>>> USAR CREDITO llamado:', JSON.stringify(req.body), '| IP:', req.ip, '| Headers:', JSON.stringify(req.headers['user-agent']));
   const { usuario_id, monto, cuotas, compra_id } = req.body;
   if (!usuario_id || !monto || !cuotas) return res.status(400).json({ error: 'Faltan datos requeridos' });
 
   try {
+    if (compra_id) {
+      const cuotasExistentes = await cuotaModel.obtenerCuotasPendientes(usuario_id);
+      const ordenDuplicada = cuotasExistentes.some(cuota => String(cuota.compra_id) === String(compra_id));
+      
+      if (ordenDuplicada) {
+        const creditoActual = await creditoModel.obtenerCreditoUsuario(usuario_id);
+        return res.json({ 
+          mensaje: 'Crédito ya procesado para esta orden', 
+          cupo_disponible_restante: parseFloat(creditoActual.cupo_disponible) 
+        });
+      }
+    }
+
     const credito = await creditoModel.obtenerCreditoUsuario(usuario_id);
     if (!credito || credito.estado !== 'activo') return res.status(403).json({ error: 'Cuenta de crédito no activa' });
 
@@ -54,27 +68,28 @@ const usarCredito = async (req, res) => {
 
 const pagarCuota = async (req, res) => {
   const { cuota_id } = req.params;
-  const usuarioId = req.user?.id || req.usuario?.id;
+  const usuarioId = req.user?.id || req.usuario?.id || req.body?.usuario_id;
 
   try {
     const cuota = await cuotaModel.obtenerCuotaById(cuota_id);
-    if (!cuota || cuota.usuario_id !== usuarioId) return res.status(403).json({ error: 'Acceso denegado' });
+    if (!cuota) return res.status(404).json({ error: 'Cuota no encontrada' });
 
+    const idFinal = usuarioId || cuota.usuario_id;
     const nuevasCuotasPagadas = cuota.cuotas_pagadas + 1;
     const completada = nuevasCuotasPagadas >= cuota.cuotas_totales;
 
     await cuotaModel.actualizarCuota(cuota_id, nuevasCuotasPagadas);
-    const creditoAntes = await creditoModel.obtenerCreditoUsuario(usuarioId);
+    const creditoAntes = await creditoModel.obtenerCreditoUsuario(idFinal);
     const montoPorCuota = parseFloat(cuota.monto_por_cuota);
-    const resultadoDevolucion = await creditoModel.devolverCupo(usuarioId, montoPorCuota);
+    const resultadoDevolucion = await creditoModel.devolverCupo(idFinal, montoPorCuota);
 
-    await movimientoModel.registrarMovimiento(usuarioId, 'pago', montoPorCuota, creditoAntes.cupo_disponible, resultadoDevolucion.nuevo_cupo, `Pago cuota ${nuevasCuotasPagadas} de ${cuota.cuotas_totales}`);
+    await movimientoModel.registrarMovimiento(idFinal, 'pago', montoPorCuota, creditoAntes.cupo_disponible, resultadoDevolucion.nuevo_cupo, `Pago cuota ${nuevasCuotasPagadas} de ${cuota.cuotas_totales}`);
 
     if (completada) {
-      const actualizacion = await creditoModel.actualizarCompletadas(usuarioId);
+      const actualizacion = await creditoModel.actualizarCompletadas(idFinal);
       if (actualizacion.nuevas_compras % 3 === 0) {
-        await creditoModel.aumentarCupo(usuarioId);
-        await movimientoModel.registrarMovimiento(usuarioId, 'aumento_cupo', 50000, resultadoDevolucion.nuevo_cupo, resultadoDevolucion.nuevo_cupo + 50000, `Aumento de cupo por ${actualizacion.nuevas_compras} compras completadas`);
+        await creditoModel.aumentarCupo(idFinal);
+        await movimientoModel.registrarMovimiento(idFinal, 'aumento_cupo', 50000, resultadoDevolucion.nuevo_cupo, resultadoDevolucion.nuevo_cupo + 50000, `Aumento de cupo por ${actualizacion.nuevas_compras} compras completadas`);
       }
     }
 
@@ -85,38 +100,39 @@ const pagarCuota = async (req, res) => {
 };
 
 const liquidarDeudaTotal = async (req, res) => {
-  const usuarioId = req.user?.id || req.usuario?.id;
+  const usuarioId = req.user?.id || req.usuario?.id || req.body?.usuario_id;
+  if (!usuarioId) return res.status(400).json({ error: 'Identificación de usuario requerida' });
 
   try {
     const credito = await creditoModel.obtenerCreditoUsuario(usuarioId);
-    const cupoTotal = parseFloat(credito.cupo_total);
-    const cupoDisponible = parseFloat(credito.cupo_disponible);
-    const deudaTotal = cupoTotal - cupoDisponible;
+    if (!credito) return res.status(404).json({ error: 'Crédito no encontrado' });
 
-    if (deudaTotal <= 0) return res.status(400).json({ error: 'No tienes deudas pendientes' });
-
-    // ✅ CORREGIDO: Contar cuántas cuotas pendientes se van a liquidar
     const cuotasPendientes = await cuotaModel.obtenerCuotasPendientes(usuarioId);
+    if (!cuotasPendientes || cuotasPendientes.length === 0) {
+      return res.status(400).json({ error: 'No tienes deudas pendientes' });
+    }
+
+    let deudaCalculada = 0;
+    cuotasPendientes.forEach(c => {
+      const restantes = c.cuotas_totales - c.cuotas_pagadas;
+      deudaCalculada += parseFloat(c.monto_por_cuota) * restantes;
+    });
+
+    const cupoDisponible = parseFloat(credito.cupo_disponible);
     const cantidadCuotasLiquidadas = cuotasPendientes.length;
 
-    // 1. Marcar todas las cuotas como pagadas
     await cuotaModel.liquidarTodasLasCuotas(usuarioId);
+    const resultado = await creditoModel.devolverCupo(usuarioId, deudaCalculada);
 
-    // 2. Devolver el cupo total
-    const resultado = await creditoModel.devolverCupo(usuarioId, deudaTotal);
-
-    // 3. Registrar movimiento de liquidación
     await movimientoModel.registrarMovimiento(
       usuarioId,
       'pago',
-      deudaTotal,
+      deudaCalculada,
       cupoDisponible,
       resultado.nuevo_cupo,
       'Liquidación total de deuda'
     );
 
-    // ✅ CORREGIDO: Actualizar compras_completadas por cada cuota liquidada
-    //    y verificar si corresponde aumento de cupo
     let cupoActualizado = resultado.nuevo_cupo;
     for (let i = 0; i < cantidadCuotasLiquidadas; i++) {
       const actualizacion = await creditoModel.actualizarCompletadas(usuarioId);
@@ -134,7 +150,6 @@ const liquidarDeudaTotal = async (req, res) => {
       }
     }
 
-    // Leer crédito final actualizado para responder con datos frescos
     const creditoFinal = await creditoModel.obtenerCreditoUsuario(usuarioId);
 
     res.json({
@@ -150,7 +165,7 @@ const liquidarDeudaTotal = async (req, res) => {
 
 const verCuotas = async (req, res) => {
   try {
-    const usuarioId = req.user?.id || req.usuario?.id;
+    const usuarioId = req.user?.id || req.usuario?.id || req.query?.usuario_id;
     const cuotas = await cuotaModel.obtenerCuotasPendientes(usuarioId);
     res.json(cuotas || []);
   } catch (err) {
@@ -160,7 +175,7 @@ const verCuotas = async (req, res) => {
 
 const verHistorial = async (req, res) => {
   try {
-    const usuarioId = req.user?.id || req.usuario?.id;
+    const usuarioId = req.user?.id || req.usuario?.id || req.query?.usuario_id;
     const historial = await movimientoModel.obtenerHistorial(usuarioId);
     res.json(historial || []);
   } catch (err) {

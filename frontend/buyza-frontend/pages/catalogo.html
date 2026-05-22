@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catálogo - Buyza</title>
   <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .paginacion-container { display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin-top: 3rem; }
+    .btn-paginacion { padding: 0.75rem 1.5rem; background: var(--primary); border: 1px solid var(--primary); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: white; }
+    .btn-paginacion:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn-paginacion:disabled { background: var(--gray-300); border-color: var(--gray-300); color: var(--gray-500); cursor: not-allowed; }
+    .info-pagina { font-weight: 700; color: var(--gray-700); font-size: 0.95rem; }
+  </style>
 </head>
 <body>
 
@@ -23,8 +30,15 @@
     <h1>Explorar <span>Productos</span></h1>
   </div>
   <div id="alerta" class="alert"></div>
+  
   <div id="grid-productos" class="features-grid">
     <p id="loading-text" style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Cargando productos...</p>
+  </div>
+
+  <div class="paginacion-container">
+    <button class="btn-paginacion" id="btnAnterior" onclick="cambiarPagina(-1)">Anterior</button>
+    <span class="info-pagina" id="infoPagina">Página 1</span>
+    <button class="btn-paginacion" id="btnSiguiente" onclick="cambiarPagina(1)">Siguiente</button>
   </div>
 </div>
 
@@ -42,10 +56,14 @@
       `<a href="nuevo-producto.html" class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.8rem">+ Publicar Producto</a>`;
   }
 
+  let paginaActual = 1;
+  const limitePorPagina = 24;
+  let tieneMasPaginas = false;
+
   async function cargarProductos() {
     const grid = document.getElementById('grid-productos');
     try {
-      const productos = await catalogo.get('');
+      const productos = await catalogo.get(`?page=${paginaActual}&limit=${limitePorPagina}`);
       
       if (!productos || productos.error) {
         mostrarAlerta('alerta', productos?.error || 'Error al cargar productos', 'error');
@@ -54,9 +72,17 @@
       }
       
       const lista = Array.isArray(productos) ? productos : (productos.productos || []);
+      
+      if (typeof productos.total !== 'undefined') {
+        const maxPaginas = Math.ceil(productos.total / limitePorPagina) || 1;
+        tieneMasPaginas = paginaActual < maxPaginas;
+      } else {
+        tieneMasPaginas = lista.length === limitePorPagina;
+      }
 
       if (lista.length === 0) {
         grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">No hay productos disponibles.</p>';
+        actualizarControlesPaginacion();
         return;
       }
 
@@ -72,32 +98,42 @@
           <div style="font-size:0.7rem; color:var(--gray-400); margin-top:0.5rem">Vendido por: ${p.vendedor_nombre || p.vendedor || 'Usuario'}</div>
         </div>
       `).join('');
+
+      actualizarControlesPaginacion();
     } catch (err) {
       mostrarAlerta('alerta', 'Error de conexión con el servidor', 'error');
       grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--gray-400)">Error de red o configuración.</p>';
     }
   }
 
-  // Función que se dispara al hacer clic en el botón "Comprar" de un producto
+  function actualizarControlesPaginacion() {
+    document.getElementById('infoPagina').textContent = `Página ${paginaActual}`;
+    document.getElementById('btnAnterior').disabled = paginaActual === 1;
+    document.getElementById('btnSiguiente').disabled = !tieneMasPaginas;
+  }
+
+  function cambiarPagina(direccion) {
+    if (direccion === 1 && !tieneMasPaginas) return;
+    if (direccion === -1 && paginaActual === 1) return;
+
+    paginaActual += direccion;
+    cargarProductos();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function comprar(id_producto) {
     if (window._comprando) return;
     window._comprando = true;
     setTimeout(() => window._comprando = false, 3000);
     try {
-      // 1. Llamada al Microservicio de Órdenes (Puerto 3003)
-      // Se envía el id_producto; el microservicio valida stock y precio
       const res = await ordenes.post('/crear', { id_producto });
       if(res && res.id_orden) {
-        // Si la orden se creó con éxito (estado 'pendiente')
         mostrarAlerta('alerta', 'Orden creada correctamente', 'success');
-
-        // 2. Redirección automática al flujo de Pagos
-        // Pasamos el ID de la orden recién creada por la URL
         setTimeout(() => {
-          console.log('Guardando orden:', res.id_orden); localStorage.setItem('orden_pendiente', String(res.id_orden)); console.log('localStorage después:', localStorage.getItem('orden_pendiente')); window.location.href = '/pages/pago';
+          localStorage.setItem('orden_pendiente', String(res.id_orden));
+          window.location.href = '/pages/pago';
         }, 1200);
       } else {
-        // Manejo de errores (ej: producto sin stock)
         mostrarAlerta('alerta', res?.error || 'Error al procesar compra', 'error');
       }
     } catch (err) {
